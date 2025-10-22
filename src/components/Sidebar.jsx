@@ -10,7 +10,7 @@ function MenuItem({ item, index, isOpen, onClose }) {
       <div>
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="w-full flex items-center justify-between px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
+          className=" flex items-center justify-between px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
         >
           <div className="flex items-center space-x-3">
             <item.icon size={20} />
@@ -106,7 +106,7 @@ export default function Sidebar() {
           <h1 className="text-xl font-bold text-white">MyApp</h1>
           <button
             onClick={() => setIsOpen(false)}
-            className="lg:hidden text-gray-400 hover:text-white"
+            className="w-[80%] lg:hidden text-gray-400 hover:text-white"
           >
             <X size={24} />
           </button>

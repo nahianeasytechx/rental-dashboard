@@ -1,26 +1,24 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom"
-import Home from "./pages/Home"
-import Sidebar from "./components/Sidebar"
-import Navbar from "./components/Navbar"
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Home from "./pages/Home";
+import Sidebar from "./components/Sidebar";
+import Navbar from "./components/Navbar";
 
 function App() {
   return (
     <>
-      <div className="flex">
-        <Sidebar/> 
-        
-        {/* Main content area */}
-        <div className="flex-1 flex flex-col">
+      <div className="lg:flex">
+        <Sidebar />
+        <div className="flex-1 min-w-0">
+          {/* flex-1: takes remaining space */}
+          {/* min-w-0: prevents flex item from overflowing */}
           <Navbar/>
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<Home/>}/>
-            </Routes>
-          </main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+          </Routes>
         </div>
       </div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
