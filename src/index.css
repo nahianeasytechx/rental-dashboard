@@ -10,7 +10,7 @@ box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
 
 }
 .sidebar-shadow{
-box-shadow: 9px 2px 9px -4px rgba(17,24,39,0.75);
--webkit-box-shadow: 9px 2px 9px -4px rgba(17,24,39,0.75);
--moz-box-shadow: 9px 2px 9px -4px rgba(17,24,39,0.75);
+box-shadow: 4px 0px 5px -1px rgba(17,24,39,1);
+-webkit-box-shadow: 4px 0px 5px -1px rgba(17,24,39,1);
+-moz-box-shadow: 4px 0px 5px -1px rgba(17,24,39,1);
 }
