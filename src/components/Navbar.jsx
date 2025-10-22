@@ -29,13 +29,12 @@ const Navbar = () => {
     {
       icon: FaSignOutAlt,
       label: "Logout",
-
       danger: true,
     },
   ];
 
   return (
-    <div className="hidden lg:block bg-gray-900 shadow-lg border-b border-gray-200 py-1 ">
+    <div className="hidden lg:block bg-gray-900 shadow-lg border-b border-gray-200 py-[3px]">
       <div className="container mx-auto py-2 px-8">
         <nav>
           <ul className="flex justify-end">
@@ -44,7 +43,7 @@ const Navbar = () => {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity text-white"
               >
-                <div className="w-10 h-10 border border-gray-400 bg-slate-200 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 border border-gray-400 bg-slate-200 rounded-full flex items-center justify-center">
                   <FaUser className="text-gray-600" size={16} />
                 </div>
                 <p>username</p>
