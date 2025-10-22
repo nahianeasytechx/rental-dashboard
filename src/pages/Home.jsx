@@ -7,7 +7,7 @@ const Home = () => {
   return (
     <>
       {/* Cards Section - Keep container for centered layout */}
-      <div className=" container py-4 px-8 mx-auto mt-20 lg:mt-0">
+      <div className=" container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">
         <h1 className="text-2xl font-semibold py-3">This Month</h1>
 
         <div className="py-5 w-full flex flex-wrap gap-5 lg:gap-x-5">
