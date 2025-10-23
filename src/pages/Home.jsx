@@ -11,7 +11,7 @@ const Home = () => {
       {/* Cards Section - Keep container for centered layout */}
       <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">
         <div className="flex space-x-4 py-4">
-          <MdDashboardCustomize className="text-4xl rounded-lg  text-white p-2 bg-gradient-to-r from bg-purple-400 via-purple-500 to-purple-600 " />
+          <MdDashboardCustomize className="text-4xl rounded-lg  text-white p-2 bg-gradient-to-r from bg-orange-500 via-orange-600 to-orange-700 " />
           <h1 className="text-3xl font-bold">Dashboard</h1>
         </div>
         <h1 className="text-xl font-bold">This Month</h1>
@@ -105,7 +105,7 @@ const Home = () => {
           </div>
 
           <div className="pl-4">
-            <button className="cursor-pointer transition-all ease-in-out duration-300 active:scale-95 my-5 py-2 px-10 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg shadow-lg text-white">
+            <button className="cursor-pointer transition-all ease-in-out duration-300 active:scale-95 my-5 py-2 px-10 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 rounded-lg shadow-lg text-white">
               <Link to="/all-accounts/bill-records"> See Full Records</Link>
             </button>
           </div>

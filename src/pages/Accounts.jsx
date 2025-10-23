@@ -87,7 +87,7 @@ const Accounts = () => {
       <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">
         {/* Header */}
         <div className="flex space-x-4 py-4">
-          <FcMoneyTransfer className="text-4xl  border border-gray-300 rounded-lg p-2 bg-gradient-to-r from bg-purple-400 via-purple-500 to-purple-600" />
+          <FcMoneyTransfer className="text-4xl  border border-gray-300 rounded-lg p-2 bg-gradient-to-r from bg-orange-500  to-orange-600" />
           <h1 className="text-3xl font-bold">Accounts Overview</h1>
         </div>
         <p className="text-gray-600 text-sm mb-6">
@@ -156,7 +156,7 @@ const Accounts = () => {
           </div>
 
           <div className="p-4">
-            <button className="cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-8 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg shadow-lg text-white text-sm">
+            <button className="cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-8 bg-gradient-to-r from-orange-500 to-orange-600  rounded-lg shadow-lg text-white text-sm">
               See Full Records
             </button>
           </div>

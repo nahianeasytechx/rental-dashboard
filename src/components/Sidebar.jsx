@@ -12,8 +12,9 @@ import {
   FiChevronRight,
 } from "react-icons/fi";
 import { MdDashboardCustomize,MdManageAccounts } from "react-icons/md";
-
+import { BsFillHouseAddFill } from "react-icons/bs";
 import { Link } from "react-router-dom";
+import { IoLogOut } from "react-icons/io5";
 
 // MenuItem Component
 function MenuItem({ item, index, isOpen, onClose }) {
@@ -77,7 +78,8 @@ export default function Sidebar() {
 
   const menuItems = [
     { icon: MdDashboardCustomize, label: "Dashboard", path: "/" },
-    { icon: FiHome, label: "Add New Flat", path: "/new-flat" },
+    { icon:BsFillHouseAddFill , label: "Add New Flat", path: "/new-flat" },
+        { icon:FiHome, label: "All Flat", path: "/all-flat" },
     {
       icon: MdManageAccounts,
       label: "All Accounts",
@@ -88,9 +90,10 @@ export default function Sidebar() {
         { label: "Bill Records", path: "/all-accounts/bill-records" },
       ],
     },
-    { icon: FiBarChart2, label: "Analytics", path: "/analytics" },
-    { icon: FiBell, label: "Notifications", path: "/notifications" }, 
+
+
     { icon: FiSettings, label: "Settings", path: "/settings" },
+        { icon: IoLogOut, label: "Logout", path: "/login" }, 
   ];
 
   return (
