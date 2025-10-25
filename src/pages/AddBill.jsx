@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const AddBill = ({ flatId, onBack }) => {
-  // Sample flat data - in real app, fetch based on flatId
+const AddBill = ({ flatId = 1, onBack }) => {
   const flatData = {
     1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678" },
     2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789" },
@@ -15,14 +14,8 @@ const AddBill = ({ flatId, onBack }) => {
 
   const flat = flatData[flatId] || {};
 
+  const [categories, setCategories] = useState([]);
   const [billData, setBillData] = useState({
-    internetBill: "",
-    dishBill: "",
-    associationFlatRent: "",
-    commonCurrentBill: "",
-    communityCenterRent: "",
-    rooftopRoomRent: "",
-    development: "",
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
   });
@@ -45,26 +38,122 @@ const AddBill = ({ flatId, onBack }) => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
+  useEffect(() => {
+    loadCategories();
+    
+    // Listen for category updates
+    const handleCategoryUpdate = () => {
+      loadCategories();
+    };
+    
+    window.addEventListener('categoriesUpdated', handleCategoryUpdate);
+    
+    return () => {
+      window.removeEventListener('categoriesUpdated', handleCategoryUpdate);
+    };
+  }, []);
+
+  const loadCategories = () => {
+    const stored = localStorage.getItem('expenseCategories');
+    if (stored) {
+      const cats = JSON.parse(stored);
+      setCategories(cats);
+      
+      // Initialize billData with all categories
+      const initialData = { 
+        month: new Date().getMonth() + 1, 
+        year: new Date().getFullYear() 
+      };
+      cats.forEach(cat => {
+        initialData[cat.id] = '';
+      });
+      setBillData(initialData);
+    } else {
+      // Initialize default categories
+      const defaultCategories = [
+        { id: 'rentFee', name: 'Rent Fee', type: 'income', default: true },
+        { id: 'internetBill', name: 'Internet Bill', type: 'expense', default: true },
+        { id: 'dishBill', name: 'Dish Bill', type: 'expense', default: true },
+        { id: 'associationFlatRent', name: 'Association Flat Rent', type: 'income', default: true },
+        { id: 'commonCurrentBill', name: 'Common Current Bill', type: 'income', default: true },
+        { id: 'communityCenterRent', name: 'Community Center Rent', type: 'income', default: true },
+        { id: 'rooftopRoomRent', name: 'Rooftop Room Rent', type: 'income', default: true },
+        { id: 'development', name: 'Development', type: 'income', default: true },
+      ];
+      console.log('Initializing default categories:', defaultCategories);
+      setCategories(defaultCategories);
+      localStorage.setItem('expenseCategories', JSON.stringify(defaultCategories));
+
+      const initialData = { 
+        month: new Date().getMonth() + 1, 
+        year: new Date().getFullYear() 
+      };
+      defaultCategories.forEach(cat => {
+        initialData[cat.id] = '';
+      });
+      setBillData(initialData);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setBillData({ ...billData, [name]: value });
   };
 
   const calculateTotal = () => {
-    return (
-      parseFloat(billData.internetBill || 0) +
-      parseFloat(billData.dishBill || 0) +
-      parseFloat(billData.associationFlatRent || 0) +
-      parseFloat(billData.commonCurrentBill || 0) +
-      parseFloat(billData.communityCenterRent || 0) +
-      parseFloat(billData.rooftopRoomRent || 0) +
-      parseFloat(billData.development || 0)
-    );
+    let total = 0;
+    categories.forEach(cat => {
+      total += parseFloat(billData[cat.id] || 0);
+    });
+    return total;
   };
 
-  const handleGenerateInvoice = () => {
-    console.log("Generating invoice for:", { flatId, flat, billData, total: calculateTotal() });
-    alert("Invoice generated successfully!");
+  const handleGenerateInvoice = async () => {
+    try {
+      let bills = [];
+      const stored = localStorage.getItem('bills');
+      if (stored) {
+        bills = JSON.parse(stored);
+      }
+
+      const newBill = {
+        id: Date.now(),
+        owner: flat.ownerName,
+        flatNo: flat.flatNo,
+        phoneNumber: flat.phoneNumber,
+        year: parseInt(billData.year),
+        month: parseInt(billData.month),
+        date: new Date().toISOString().split('T')[0],
+        status: "Pending",
+        type: "Monthly Bill",
+        createdAt: new Date().toISOString(),
+      };
+
+      // Add all category values to the bill
+      categories.forEach(cat => {
+        newBill[cat.id] = parseFloat(billData[cat.id] || 0);
+      });
+
+      newBill.total = calculateTotal();
+
+      bills.push(newBill);
+      localStorage.setItem('bills', JSON.stringify(bills));
+
+      alert("Invoice generated successfully!");
+      
+      // Reset form
+      const resetData = { 
+        month: new Date().getMonth() + 1, 
+        year: new Date().getFullYear() 
+      };
+      categories.forEach(cat => {
+        resetData[cat.id] = '';
+      });
+      setBillData(resetData);
+    } catch (error) {
+      console.error('Error saving bill:', error);
+      alert('Error saving bill. Please try again.');
+    }
   };
 
   const ReceiptIcon = () => (
@@ -73,22 +162,9 @@ const AddBill = ({ flatId, onBack }) => {
     </svg>
   );
 
-  const ArrowLeftIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-    </svg>
-  );
-
   return (
     <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">
       <div className="flex items-center space-x-4 py-4">
-        {/* <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          <ArrowLeftIcon />
-          <span>Back</span>
-        </button> */}
         <div className="text-4xl rounded-lg text-white p-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600">
           <ReceiptIcon />
         </div>
@@ -156,105 +232,26 @@ const AddBill = ({ flatId, onBack }) => {
           </div>
         </div>
 
-        {/* Bill Items */}
+        {/* Dynamic Bill Items */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Internet Bill (৳)
-            </label>
-            <input
-              type="number"
-              name="internetBill"
-              value={billData.internetBill}
-              onChange={handleInputChange}
-              placeholder="0.00"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Dish Bill (৳)
-            </label>
-            <input
-              type="number"
-              name="dishBill"
-              value={billData.dishBill}
-              onChange={handleInputChange}
-              placeholder="0.00"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Association Flat Rent (৳)
-            </label>
-            <input
-              type="number"
-              name="associationFlatRent"
-              value={billData.associationFlatRent}
-              onChange={handleInputChange}
-              placeholder="0.00"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Common Current Bill (৳)
-            </label>
-            <input
-              type="number"
-              name="commonCurrentBill"
-              value={billData.commonCurrentBill}
-              onChange={handleInputChange}
-              placeholder="0.00"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Community Center Rent (৳)
-            </label>
-            <input
-              type="number"
-              name="communityCenterRent"
-              value={billData.communityCenterRent}
-              onChange={handleInputChange}
-              placeholder="0.00"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Rooftop Room Rent (৳)
-            </label>
-            <input
-              type="number"
-              name="rooftopRoomRent"
-              value={billData.rooftopRoomRent}
-              onChange={handleInputChange}
-              placeholder="0.00"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Development (৳)
-            </label>
-            <input
-              type="number"
-              name="development"
-              value={billData.development}
-              onChange={handleInputChange}
-              placeholder="0.00"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
+          {categories.map(cat => (
+            <div key={cat.id}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {cat.name} (৳)
+                <span className={`ml-2 text-xs ${cat.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                  [{cat.type}]
+                </span>
+              </label>
+              <input
+                type="number"
+                name={cat.id}
+                value={billData[cat.id] || ''}
+                onChange={handleInputChange}
+                placeholder="0.00"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+          ))}
         </div>
 
         {/* Total */}

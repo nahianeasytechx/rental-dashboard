@@ -79,6 +79,7 @@ export default function Sidebar() {
   const menuItems = [
     { icon: MdDashboardCustomize, label: "Dashboard", path: "/" },
     { icon:BsFillHouseAddFill , label: "Add New Flat", path: "/new-flat" },
+    { icon:BsFillHouseAddFill , label: "Ownership Transfer", path: "/transfer-owner" },
         { icon:FiHome, label: "All Flat", path: "/all-flat" },
     {
       icon: MdManageAccounts,
@@ -87,6 +88,7 @@ export default function Sidebar() {
         
         { label: "Accounts", path: "/all-accounts/accounts" },
         { label: "Add Expense", path: "/all-accounts/add-expense" },
+        { label: "Expense Report", path: "/all-accounts/expense-report" },
         { label: "Bill Records", path: "/all-accounts/bill-records" },
       ],
     },

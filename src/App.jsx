@@ -9,6 +9,9 @@ import BillRecords from "./pages/BillRecords";
 import AllFlat, { AddBill, EditFlat } from "./pages/AllFlat";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
+import MonthlyStatements from "./pages/MonthlyStatements ";
+import ExpenseCategoryReport from "./pages/ExpenseCategoryReport";
+import OwnerTransfer from "./pages/OwnerTransfer";
 
 function App() {
   const location = useLocation();
@@ -33,9 +36,12 @@ function App() {
               <Route path="/all-accounts/accounts" element={<Accounts />} />
               <Route path="/all-accounts/add-expense" element={<AddExpense />} />
               <Route path="/all-flat" element={<AllFlat />} />
+              <Route path ='/transfer-owner' element={<OwnerTransfer/>}/>
               <Route path="/all-flat/edit-flat/:flatId" element={<EditFlat />} />
               <Route path="/all-flat/add-bill/:flatId" element={<AddBill />} />
               <Route path="/all-accounts/bill-records" element={<BillRecords />} />
+              <Route path="/statements" element={<MonthlyStatements/>}/>
+              <Route path='/all-accounts/expense-report' element={<ExpenseCategoryReport/>}/>
               <Route path="/settings" element={<Settings/>}/>
             </Routes>
           </div>
