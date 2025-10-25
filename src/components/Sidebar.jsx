@@ -94,6 +94,7 @@ export default function Sidebar() {
     },
 
 
+    { icon: FiSettings, label: "User Roles", path: "/user-role" },
     { icon: FiSettings, label: "Settings", path: "/settings" },
         { icon: IoLogOut, label: "Logout", path: "/login" }, 
   ];

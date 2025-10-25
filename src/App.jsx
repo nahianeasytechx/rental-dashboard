@@ -12,6 +12,7 @@ import Settings from "./pages/Settings";
 import MonthlyStatements from "./pages/MonthlyStatements ";
 import ExpenseCategoryReport from "./pages/ExpenseCategoryReport";
 import OwnerTransfer from "./pages/OwnerTransfer";
+import UserRoles from "./pages/UserRoles";
 
 function App() {
   const location = useLocation();
@@ -41,6 +42,7 @@ function App() {
               <Route path="/all-flat/add-bill/:flatId" element={<AddBill />} />
               <Route path="/all-accounts/bill-records" element={<BillRecords />} />
               <Route path="/statements" element={<MonthlyStatements/>}/>
+              <Route path="/user-role" element={<UserRoles/>}/>
               <Route path='/all-accounts/expense-report' element={<ExpenseCategoryReport/>}/>
               <Route path="/settings" element={<Settings/>}/>
             </Routes>

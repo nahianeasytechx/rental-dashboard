@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 // AddBill Component
 const AddBill = () => {
@@ -7,14 +7,14 @@ const AddBill = () => {
   const { flatId } = useParams();
   
   const flatData = {
-    1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678" },
-    2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789" },
-    3: { flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890" },
-    4: { flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901" },
-    5: { flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012" },
-    6: { flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123" },
-    7: { flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234" },
-    8: { flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345" },
+    1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
+    2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
+    3: { flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
+    4: { flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
+    5: { flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
+    6: { flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
+    7: { flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
+    8: { flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
   };
 
   const flat = flatData[flatId] || {};
@@ -71,16 +71,9 @@ const AddBill = () => {
     </svg>
   );
 
-  const ArrowLeftIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-    </svg>
-  );
-
   return (
     <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">
       <div className="flex items-center space-x-4 py-4">
-
         <div className="text-4xl rounded-lg text-white p-2 bg-gradient-to-r from-orange-500  to-orange-600">
           <ReceiptIcon />
         </div>
@@ -89,7 +82,7 @@ const AddBill = () => {
 
       <div className="my-6 bg-white border border-gray-100 rounded-xl shadow-xl p-6">
         <h2 className="text-xl font-bold mb-4 text-gray-800">Owner Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <p className="text-sm text-gray-500 font-medium">Flat Number</p>
             <p className="text-lg text-gray-800 font-semibold">{flat.flatNo}</p>
@@ -101,6 +94,10 @@ const AddBill = () => {
           <div>
             <p className="text-sm text-gray-500 font-medium">Phone Number</p>
             <p className="text-lg text-gray-800 font-semibold">{flat.phoneNumber}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 font-medium">NID Number</p>
+            <p className="text-lg text-gray-800 font-semibold">{flat.nid || 'N/A'}</p>
           </div>
         </div>
       </div>
@@ -192,20 +189,21 @@ const EditFlat = () => {
   const { flatId } = useParams();
   
   const flatDataInitial = {
-    1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678" },
-    2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789" },
-    3: { flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890" },
-    4: { flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901" },
-    5: { flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012" },
-    6: { flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123" },
-    7: { flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234" },
-    8: { flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345" },
+    1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
+    2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
+    3: { flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
+    4: { flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
+    5: { flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
+    6: { flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
+    7: { flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
+    8: { flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
   };
 
   const [formData, setFormData] = useState(flatDataInitial[flatId] || {
     flatNo: "",
     ownerName: "",
     phoneNumber: "",
+    nid: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -227,6 +225,11 @@ const EditFlat = () => {
     } else if (!/^(\+880|880)?[0-9]{10,11}$/.test(formData.phoneNumber.replace(/[\s-]/g, ""))) {
       newErrors.phoneNumber = "Please enter a valid phone number";
     }
+    if (formData.nid && formData.nid.trim()) {
+      if (!/^[0-9]{10,17}$/.test(formData.nid.replace(/[\s-]/g, ""))) {
+        newErrors.nid = "NID must be 10-17 digits";
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -245,12 +248,6 @@ const EditFlat = () => {
     </svg>
   );
 
-  const ArrowLeftIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-    </svg>
-  );
-
   const SaveIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -260,10 +257,6 @@ const EditFlat = () => {
   return (
     <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">
       <div className="flex items-center space-x-4 py-4">
-        {/* <button onClick={() => navigate('/all-flat')} className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-          <ArrowLeftIcon />
-          <span>Back</span>
-        </button> */}
         <div className="text-4xl rounded-lg text-white p-2 bg-gradient-to-r from-orange-500 to-orange-600 ">
           <EditIcon />
         </div>
@@ -302,6 +295,17 @@ const EditFlat = () => {
             {errors.phoneNumber && <p className="mt-1 text-sm text-red-500">{errors.phoneNumber}</p>}
             <p className="mt-1 text-xs text-gray-500">Format: +880 1XXXXXXXXX or 01XXXXXXXXX</p>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              NID Number
+            </label>
+            <input type="text" name="nid" value={formData.nid} onChange={handleInputChange}
+              placeholder="e.g., 1234567890123"
+              className={`w-full px-4 py-3 border ${errors.nid ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 ${errors.nid ? "focus:ring-red-500" : "focus:ring-blue-500"} focus:border-transparent transition-all`} />
+            {errors.nid && <p className="mt-1 text-sm text-red-500">{errors.nid}</p>}
+            <p className="mt-1 text-xs text-gray-500">10-17 digit National ID number (Optional)</p>
+          </div>
         </div>
 
         <div className="flex gap-4 mt-8 pt-6 border-t border-gray-200">
@@ -326,21 +330,22 @@ const AllFlat = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [flats] = useState([
-    { id: 1, flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678" },
-    { id: 2, flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789" },
-    { id: 3, flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890" },
-    { id: 4, flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901" },
-    { id: 5, flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012" },
-    { id: 6, flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123" },
-    { id: 7, flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234" },
-    { id: 8, flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345" },
+    { id: 1, flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
+    { id: 2, flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
+    { id: 3, flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
+    { id: 4, flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
+    { id: 5, flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
+    { id: 6, flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
+    { id: 7, flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
+    { id: 8, flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
   ]);
 
   const filteredFlats = flats.filter(
     (flat) =>
       flat.flatNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
       flat.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      flat.phoneNumber.includes(searchQuery)
+      flat.phoneNumber.includes(searchQuery) ||
+      (flat.nid && flat.nid.includes(searchQuery))
   );
 
   const handleEdit = (flatId) => {
@@ -369,6 +374,12 @@ const AllFlat = () => {
     </svg>
   );
 
+  const IdCardIcon = () => (
+    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+    </svg>
+  );
+
   return (
     <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">
       <div className="flex space-x-4 py-4">
@@ -385,7 +396,7 @@ const AllFlat = () => {
           </svg>
           <input
             type="text"
-            placeholder="Search by flat no, owner name, or phone number..."
+            placeholder="Search by flat no, owner name, phone number, or NID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
@@ -412,6 +423,14 @@ const AllFlat = () => {
               <div>
                 <p className="text-xs text-gray-500 font-medium">Phone Number</p>
                 <p className="text-sm text-gray-800 font-semibold">{flat.phoneNumber}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                  <IdCardIcon />
+                  NID Number
+                </p>
+                <p className="text-sm text-gray-800 font-semibold">{flat.nid || 'N/A'}</p>
               </div>
             </div>
 
