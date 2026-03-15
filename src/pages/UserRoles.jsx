@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import Swal from 'sweetalert2';
 
 const UserRole = () => {
   const { users, addUser, updateUser, deleteUser } = useApp();
@@ -74,7 +75,13 @@ const UserRole = () => {
 
     resetForm();
     setShowAddModal(false);
-    alert('User added successfully!');
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Added',
+      text: 'User added successfully!',
+      confirmButtonColor: '#f97316'
+    });
   };
 
   const handleUpdateUser = () => {
@@ -84,14 +91,35 @@ const UserRole = () => {
 
     resetForm();
     setEditingUser(null);
-    alert('User updated successfully!');
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Updated',
+      text: 'User updated successfully!',
+      confirmButtonColor: '#f97316'
+    });
   };
 
   const handleDeleteUser = (userId) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-
-    deleteUser(userId);
-    alert('User deleted successfully!');
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteUser(userId);
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: 'User has been deleted.',
+          confirmButtonColor: '#f97316'
+        });
+      }
+    });
   };
 
   const handleEditUser = (user) => {

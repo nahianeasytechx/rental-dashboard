@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
+import Swal from "sweetalert2";
 
 const AddRent = () => {
   const { flats, categories, addBill } = useApp();
@@ -43,7 +44,12 @@ const AddRent = () => {
 
   const handleGenerateInvoice = () => {
     if (!flat) {
-      alert("Please select a flat first.");
+      Swal.fire({
+        icon: "error",
+        title: "Selection Required",
+        text: "Please select a flat first.",
+        confirmButtonColor: "#22c55e"
+      });
       return;
     }
 

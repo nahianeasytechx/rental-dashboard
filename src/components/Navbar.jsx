@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaAngleDown, FaUser, FaCog, FaSignOutAlt } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -30,6 +34,11 @@ const Navbar = () => {
       icon: FaSignOutAlt,
       label: "Logout",
       danger: true,
+      onClick: (e) => {
+        e.preventDefault();
+        logout();
+        navigate("/login");
+      }
     },
   ];
 
@@ -43,10 +52,14 @@ const Navbar = () => {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity text-white"
               >
-                <div className="w-8 h-8 border border-gray-400 bg-slate-200 rounded-full flex items-center justify-center">
-                  <FaUser className="text-gray-600" size={16} />
+                <div className="w-8 h-8 border border-gray-400 bg-slate-200 rounded-full flex items-center justify-center font-bold text-gray-700">
+                  {currentUser?.avatar ? (
+                    <img src={currentUser.avatar} alt="avatar" className="w-full h-full rounded-full" />
+                  ) : (
+                    currentUser?.name?.charAt(0) || <FaUser size={16} />
+                  )}
                 </div>
-                <p>username</p>
+                <p>{currentUser?.name || 'Guest'}</p>
                 <FaAngleDown
                   className={`text-gray-600 transition-transform duration-200 ${
                     isDropdownOpen ? "rotate-180" : ""
@@ -67,17 +80,18 @@ const Navbar = () => {
                   {/* User Info */}
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-semibold text-gray-800">
-                      John Doe
+                      {currentUser?.name || 'Guest User'}
                     </p>
-                    <p className="text-xs text-gray-500">john@example.com</p>
+                    <p className="text-xs text-gray-500">{currentUser?.email || 'Not logged in'}</p>
                   </div>
 
                   {/* Menu Items */}
                   {menuItems.map((item, index) => (
                     <button
                       key={index}
-                      onClick={() => {
+                      onClick={(e) => {
                         setIsDropdownOpen(false);
+                        if (item.onClick) item.onClick(e);
                       }}
                       className={`w-full flex  items-center cursor-pointer space-x-3 px-4 py-2 text-sm transition-colors ${
                         item.danger

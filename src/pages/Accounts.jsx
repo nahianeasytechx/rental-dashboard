@@ -2,9 +2,10 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
+import Swal from "sweetalert2";
 
 const Accounts = () => {
-  const { bills, categories, updateBillStatus, flats } = useApp();
+  const { bills, categories, updateBillStatus, flats, deleteBill } = useApp();
   const { currentUser } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -241,6 +242,7 @@ const Accounts = () => {
                 <th className="px-6 py-3">Amount</th>
                 <th className="px-6 py-3">Date</th>
                 <th className="px-6 py-3 text-center">Status</th>
+                {currentUser?.role === 'admin' && <th className="px-6 py-3 text-center">Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -284,6 +286,32 @@ const Accounts = () => {
                         </span>
                       )}
                     </td>
+                    {currentUser?.role === 'admin' && (
+                      <td className="px-6 py-3 text-center">
+                        <button
+                          onClick={() => {
+                            Swal.fire({
+                              title: 'Delete Bill?',
+                              text: `Delete bill for Flat ${item.flatNo}? This cannot be undone.`,
+                              icon: 'warning',
+                              showCancelButton: true,
+                              confirmButtonColor: '#ef4444',
+                              cancelButtonColor: '#6b7280',
+                              confirmButtonText: 'Yes, delete!',
+                            }).then((result) => {
+                              if (result.isConfirmed) {
+                                deleteBill(item.id);
+                                Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Bill deleted.', confirmButtonColor: '#f97316', timer: 2000, timerProgressBar: true });
+                              }
+                            });
+                          }}
+                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors cursor-pointer"
+                          title="Delete Bill"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

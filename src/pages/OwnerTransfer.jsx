@@ -12,6 +12,7 @@ import {
 import { FcManager } from "react-icons/fc";
 import { MdBrowserUpdated } from "react-icons/md";
 import { useApp } from "../context/AppContext";
+import Swal from "sweetalert2";
 
 const OwnerTransfer = () => {
   const { flats, transferOwner } = useApp();
@@ -27,7 +28,12 @@ const OwnerTransfer = () => {
 
   const handleUpdateOwnerSubmit = () => {
     if (!updateOwnerData.flatNo || !updateOwnerData.newOwnerName) {
-      alert("Please select a flat and enter the new owner's name.");
+      Swal.fire({
+        icon: "error",
+        title: "Missing Fields",
+        text: "Please select a flat and enter the new owner's name.",
+        confirmButtonColor: "#16a34a"
+      });
       return;
     }
 
@@ -42,7 +48,12 @@ const OwnerTransfer = () => {
         ownershipChangeDate: updateOwnerData.changeDate
       });
 
-      alert(`Ownership of Flat ${flat.flatNo} transferred successfully to ${updateOwnerData.newOwnerName}!`);
+      Swal.fire({
+        icon: "success",
+        title: "Transferred",
+        text: `Ownership of Flat ${flat.flatNo} transferred successfully to ${updateOwnerData.newOwnerName}!`,
+        confirmButtonColor: "#16a34a"
+      });
       
       // Reset form
       setUpdateOwnerData({

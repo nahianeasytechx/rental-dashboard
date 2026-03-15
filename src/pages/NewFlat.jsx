@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import { FcManager } from "react-icons/fc";
 import { useApp } from "../context/AppContext";
+import Swal from "sweetalert2";
 
 const NewFlat = () => {
   const { addFlat, updateFlat, flats } = useApp();
@@ -36,7 +37,12 @@ const NewFlat = () => {
 
   const handleNewFlatSubmit = () => {
     if (!newFlatData.flatNo || !newFlatData.ownerName) {
-      alert("Flat Number and Owner Name are required.");
+      Swal.fire({
+        icon: "error",
+        title: "Missing Fields",
+        text: "Flat Number and Owner Name are required.",
+        confirmButtonColor: "#3b82f6"
+      });
       return;
     }
     addFlat({
@@ -48,14 +54,26 @@ const NewFlat = () => {
       address: newFlatData.address,
       moveInDate: newFlatData.moveInDate,
     });
-    alert("New flat added successfully!");
+    
+    Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "New flat added successfully!",
+      confirmButtonColor: "#3b82f6"
+    });
+    
     setNewFlatData({ flatNo: "", ownerName: "", phone: "", email: "", nidNumber: "", address: "", moveInDate: "" });
   };
 
   const handleUpdateOwnerSubmit = () => {
     const flat = flats.find(f => f.flatNo === updateOwnerData.flatNo);
     if (!flat) {
-      alert("Flat not found!");
+      Swal.fire({
+        icon: "error",
+        title: "Not Found",
+        text: "Flat not found!",
+        confirmButtonColor: "#3b82f6"
+      });
       return;
     }
     updateFlat(flat.id, {
@@ -65,7 +83,14 @@ const NewFlat = () => {
       nid: updateOwnerData.nidNumber,
       address: updateOwnerData.address,
     });
-    alert("Owner information updated successfully!");
+    
+    Swal.fire({
+      icon: "success",
+      title: "Updated",
+      text: "Owner information updated successfully!",
+      confirmButtonColor: "#3b82f6"
+    });
+    
     setUpdateOwnerData({ flatNo: "", newOwnerName: "", phone: "", email: "", nidNumber: "", address: "", changeDate: "" });
   };
 

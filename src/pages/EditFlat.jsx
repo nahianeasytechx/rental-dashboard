@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 
 const EditFlat = ({ flatId, onBack }) => {
   // Sample flat data - in real app, fetch based on flatId
@@ -53,8 +54,14 @@ const EditFlat = ({ flatId, onBack }) => {
   const handleSubmit = () => {
     if (validateForm()) {
       console.log("Updating flat:", { flatId, formData });
-      alert("Flat information updated successfully!");
-      onBack();
+      Swal.fire({
+        icon: "success",
+        title: "Updated",
+        text: "Flat information updated successfully!",
+        confirmButtonColor: "#3b82f6"
+      }).then(() => {
+        onBack();
+      });
     }
   };
 

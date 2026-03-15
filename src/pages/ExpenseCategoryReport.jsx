@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import Swal from 'sweetalert2';
 
 const ExpenseCategoryReport = () => {
-  const { bills, categories } = useApp();
+  const { bills, categories, deleteBill } = useApp();
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -249,6 +253,7 @@ const calculateCategoryStats = () => {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Amount</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
+                        {isAdmin && <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Action</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -270,7 +275,34 @@ const calculateCategoryStats = () => {
                                 {bill.status}
                               </span>
                             </td>
+                            {isAdmin && (
+                              <td className="px-4 py-3 text-center">
+                                <button
+                                  onClick={() => {
+                                    Swal.fire({
+                                      title: 'Delete Bill?',
+                                      text: `Delete bill for Flat ${bill.flatNo} (${bill.owner})? This cannot be undone.`,
+                                      icon: 'warning',
+                                      showCancelButton: true,
+                                      confirmButtonColor: '#ef4444',
+                                      cancelButtonColor: '#6b7280',
+                                      confirmButtonText: 'Yes, delete!',
+                                    }).then((result) => {
+                                      if (result.isConfirmed) {
+                                        deleteBill(bill.id);
+                                        Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Bill deleted.', confirmButtonColor: '#f97316', timer: 2000, timerProgressBar: true });
+                                      }
+                                    });
+                                  }}
+                                  className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors cursor-pointer"
+                                  title="Delete Bill"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                                </button>
+                              </td>
+                            )}
                           </tr>
+
                         ))
                       ) : (
                         <tr>

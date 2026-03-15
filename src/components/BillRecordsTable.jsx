@@ -1,10 +1,12 @@
 import React from "react";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
+import Swal from "sweetalert2";
 
 const BillRecordsTable = ({ limit = null, columns = null }) => {
-  const { bills: allRecords, categories, flats } = useApp();
+  const { bills: allRecords, categories, flats, deleteBill } = useApp();
   const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -48,6 +50,36 @@ const BillRecordsTable = ({ limit = null, columns = null }) => {
   const sortedRecords = [...userRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
   const displayRecords = limit ? sortedRecords.slice(0, limit) : sortedRecords;
 
+  const handleDelete = (row) => {
+    Swal.fire({
+      title: 'Delete Bill?',
+      text: `Delete bill for Flat ${row.flatNo} (${row.owner})? This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteBill(row.id);
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: 'Bill record has been deleted.',
+          confirmButtonColor: '#f97316',
+          timer: 2000,
+          timerProgressBar: true,
+        });
+      }
+    });
+  };
+
+  const TrashIcon = () => (
+    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
+    </svg>
+  );
+
   return (
     <div className="relative">
       <div className="overflow-x-auto bg-gray-300">
@@ -64,12 +96,13 @@ const BillRecordsTable = ({ limit = null, columns = null }) => {
                   )}
                 </th>
               ))}
+              {isAdmin && <th className="px-6 py-3 text-center whitespace-nowrap">Action</th>}
             </tr>
           </thead>
           <tbody>
             {displayRecords.length === 0 ? (
               <tr>
-                <td colSpan={selectedColumns.length} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={selectedColumns.length + (isAdmin ? 1 : 0)} className="px-6 py-8 text-center text-gray-500">
                   No bill records found
                 </td>
               </tr>
@@ -101,6 +134,17 @@ const BillRecordsTable = ({ limit = null, columns = null }) => {
                         : row[col.key] || 'N/A'}
                     </td>
                   ))}
+                  {isAdmin && (
+                    <td className="px-6 py-4 text-center">
+                      <button
+                        onClick={() => handleDelete(row)}
+                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors cursor-pointer"
+                        title="Delete Bill"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}

@@ -163,6 +163,14 @@ export function AppProvider({ children }) {
     });
   }, []);
 
+  const deleteFlat = useCallback((id) => {
+    setFlats(prev => {
+      const next = prev.filter(f => f.id !== id);
+      persist("abx_flats", next);
+      return next;
+    });
+  }, []);
+
   // ── Bill CRUD ──────────────────────────────────────────────────────────────
   const addBill = useCallback((billData) => {
     const newBill = {
@@ -315,7 +323,7 @@ export function AppProvider({ children }) {
       // Data
       flats, bills, expenses, categories, users,
       // Flat actions
-      addFlat, updateFlat, transferOwner,
+      addFlat, updateFlat, transferOwner, deleteFlat,
       // Bill actions
       addBill, updateBillStatus, deleteBill,
       // Expense actions

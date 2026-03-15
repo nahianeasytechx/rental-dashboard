@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
+import Swal from "sweetalert2";
 
 // AddBill Component
 const AddBill = () => {
@@ -72,8 +73,14 @@ const AddBill = () => {
       total: total
     });
     
-    alert("Invoice generated and saved successfully!");
-    navigate('/all-flat');
+    Swal.fire({
+      icon: "success",
+      title: "Generated",
+      text: "Invoice generated and saved successfully!",
+      confirmButtonColor: "#22c55e"
+    }).then(() => {
+      navigate('/all-flat');
+    });
   };
 
   const ReceiptIcon = () => (
@@ -240,8 +247,14 @@ const EditFlat = () => {
   const handleSubmit = () => {
     if (validateForm()) {
       updateFlat(parseInt(flatId), formData);
-      alert("Flat information updated successfully!");
-      navigate('/all-flat');
+      Swal.fire({
+        icon: "success",
+        title: "Updated",
+        text: "Flat information updated successfully!",
+        confirmButtonColor: "#3b82f6"
+      }).then(() => {
+        navigate('/all-flat');
+      });
     }
   };
 
@@ -330,7 +343,7 @@ const EditFlat = () => {
 // Main AllFlat Component
 const AllFlat = () => {
   const navigate = useNavigate();
-  const { flats } = useApp();
+  const { flats, deleteFlat } = useApp();
   const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -354,6 +367,30 @@ const AllFlat = () => {
 
   const handleAddBill = (flatId) => {
     navigate(`/all-flat/add-bill/${flatId}`);
+  };
+
+  const handleDeleteFlat = (flat) => {
+    Swal.fire({
+      title: 'Delete Flat?',
+      text: `Are you sure you want to delete Flat ${flat.flatNo} (${flat.ownerName})? This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteFlat(flat.id);
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: `Flat ${flat.flatNo} has been deleted.`,
+          confirmButtonColor: '#f97316',
+          timer: 2000,
+          timerProgressBar: true,
+        });
+      }
+    });
   };
 
   const HomeIcon = () => (
@@ -435,21 +472,30 @@ const AllFlat = () => {
             </div>
 
             {currentUser?.role === 'admin' && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(flat.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg shadow-lg text-white text-sm font-medium"
-                >
-                  <EditIcon />
-                  <span>Edit</span>
-                </button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(flat.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg shadow-lg text-white text-sm font-medium"
+                  >
+                    <EditIcon />
+                    <span>Edit</span>
+                  </button>
 
+                  <button
+                    onClick={() => handleAddBill(flat.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-lg shadow-lg text-white text-sm font-medium"
+                  >
+                    <ReceiptIcon />
+                    <span>Bill</span>
+                  </button>
+                </div>
                 <button
-                  onClick={() => handleAddBill(flat.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-lg shadow-lg text-white text-sm font-medium"
+                  onClick={() => handleDeleteFlat(flat)}
+                  className="w-full flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-red-500 via-red-600 to-red-700 rounded-lg shadow-lg text-white text-sm font-medium"
                 >
-                  <ReceiptIcon />
-                  <span>Bill</span>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                  <span>Delete Flat</span>
                 </button>
               </div>
             )}
