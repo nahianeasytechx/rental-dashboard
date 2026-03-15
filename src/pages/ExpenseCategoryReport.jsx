@@ -1,12 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import Swal from 'sweetalert2';
+
+// Inject print styles once
+const PRINT_STYLE_ID = 'expense-report-print-style';
+if (!document.getElementById(PRINT_STYLE_ID)) {
+  const style = document.createElement('style');
+  style.id = PRINT_STYLE_ID;
+  style.innerHTML = `
+    @media print {
+      body * { visibility: hidden !important; }
+      #expense-print-area, #expense-print-area * { visibility: visible !important; }
+      #expense-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 24px; background: white; z-index: 9999; }
+      .no-print { display: none !important; }
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 const ExpenseCategoryReport = () => {
-  const [categories, setCategories] = useState([]);
-  const [bills, setBills] = useState([]);
+  const { bills, categories, deleteBill } = useApp();
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [loading, setLoading] = useState(true);
 
   const months = [
     { value: 1, label: "January" }, { value: 2, label: "February" },
@@ -20,52 +39,7 @@ const ExpenseCategoryReport = () => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
-  useEffect(() => {
-    loadData();
 
-    const handleCategoryUpdate = () => {
-      loadData();
-    };
-
-    window.addEventListener('categoriesUpdated', handleCategoryUpdate);
-
-    return () => {
-      window.removeEventListener('categoriesUpdated', handleCategoryUpdate);
-    };
-  }, []);
-
-  const loadData = () => {
-    try {
-      // Load categories
-      const storedCategories = localStorage.getItem('expenseCategories');
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        const defaultCategories = [
-          { id: 'rentFee', name: 'Rent Fee', type: 'income', default: true },
-          { id: 'internetBill', name: 'Internet Bill', type: 'expense', default: true },
-          { id: 'dishBill', name: 'Dish Bill', type: 'expense', default: true },
-          { id: 'associationFlatRent', name: 'Association Flat Rent', type: 'income', default: true },
-          { id: 'commonCurrentBill', name: 'Common Current Bill', type: 'income', default: true },
-          { id: 'communityCenterRent', name: 'Community Center Rent', type: 'income', default: true },
-          { id: 'rooftopRoomRent', name: 'Rooftop Room Rent', type: 'income', default: true },
-          { id: 'development', name: 'Development', type: 'income', default: true },
-        ];
-        setCategories(defaultCategories);
-        localStorage.setItem('expenseCategories', JSON.stringify(defaultCategories));
-      }
-
-      // Load bills
-      const storedBills = localStorage.getItem('bills');
-      if (storedBills) {
-        setBills(JSON.parse(storedBills));
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
 const calculateCategoryStats = () => {
   const filteredBills = bills.filter(
@@ -117,19 +91,130 @@ const calculateCategoryStats = () => {
   const categoryStats = calculateCategoryStats();
   const selectedCategoryData = categoryStats[0];
 
+  const monthLabel = months.find(m => m.value === selectedMonth)?.label || '';
+
+  const handlePrint = () => {
+    if (!selectedCategoryData) return;
+
+    const bills = selectedCategoryData.bills || [];
+    const rowsHtml = bills.length > 0
+      ? bills.map((bill, i) => `
+          <tr style="background:${i % 2 === 0 ? '#ffffff' : '#f9fafb'}">
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-weight:500">${bill.flatNo}</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">${bill.owner || '—'}</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-weight:600">&#2547;${(bill[selectedCategoryData.id] || 0).toLocaleString()}</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">${bill.date || 'N/A'}</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb">
+              <span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:${bill.status === 'Received' ? '#dcfce7' : '#fee2e2'};color:${bill.status === 'Received' ? '#15803d' : '#dc2626'}">
+                ${bill.status}
+              </span>
+            </td>
+          </tr>`).join('')
+      : `<tr><td colspan="5" style="padding:24px;text-align:center;color:#6b7280">No bills found for this period.</td></tr>`;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8"/>
+        <title>Expense Statement – ${selectedCategoryData.name} – ${monthLabel} ${selectedYear}</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; color: #111827; background: #fff; padding: 40px; font-size: 14px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 2px solid #f97316; }
+          .header-left h1 { font-size: 24px; font-weight: 700; color: #111827; }
+          .header-left p { font-size: 13px; color: #6b7280; margin-top: 4px; }
+          .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; margin-top: 8px; background: ${selectedCategoryData.type === 'income' ? '#dcfce7' : '#fee2e2'}; color: ${selectedCategoryData.type === 'income' ? '#15803d' : '#dc2626'}; }
+          .header-right { text-align: right; }
+          .header-right .company { font-size: 18px; font-weight: 700; color: #f97316; }
+          .header-right .date { font-size: 12px; color: #6b7280; margin-top: 4px; }
+          .summary { display: flex; gap: 16px; margin-bottom: 28px; }
+          .summary-card { flex: 1; border-radius: 10px; padding: 16px 20px; }
+          .summary-card p:first-child { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+          .summary-card p:last-child { font-size: 22px; font-weight: 700; }
+          .card-blue   { background: #eff6ff; border: 1px solid #bfdbfe; }
+          .card-blue   p:first-child { color: #1d4ed8; }
+          .card-blue   p:last-child  { color: #1e3a8a; }
+          .card-green  { background: #f0fdf4; border: 1px solid #bbf7d0; }
+          .card-green  p:first-child { color: #16a34a; }
+          .card-green  p:last-child  { color: #14532d; }
+          .card-red    { background: #fff1f2; border: 1px solid #fecdd3; }
+          .card-red    p:first-child { color: #dc2626; }
+          .card-red    p:last-child  { color: #7f1d1d; }
+          h3 { font-size: 15px; font-weight: 700; color: #374151; margin-bottom: 12px; }
+          table { width: 100%; border-collapse: collapse; }
+          thead { background: #f3f4f6; }
+          thead th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #374151; border-bottom: 2px solid #e5e7eb; }
+          .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 12px; color: #9ca3af; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="header-left">
+            <h1>${selectedCategoryData.name}</h1>
+            <p>Category Expense Statement &bull; ${monthLabel} ${selectedYear}</p>
+            <span class="badge">${selectedCategoryData.type}</span>
+          </div>
+          <div class="header-right">
+            <div class="company">Rental Dashboard</div>
+            <div class="date">Printed: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-card card-blue">
+            <p>Total Collection</p>
+            <p>&#2547;${selectedCategoryData.totalAmount.toLocaleString()}</p>
+          </div>
+          <div class="summary-card card-green">
+            <p>Paid Amount</p>
+            <p>&#2547;${selectedCategoryData.paidAmount.toLocaleString()}</p>
+          </div>
+          <div class="summary-card card-red">
+            <p>Due Amount</p>
+            <p>&#2547;${selectedCategoryData.dueAmount.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <h3>Bill Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Flat No</th>
+              <th>Owner</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <span>Total Records: ${bills.length}</span>
+          <span>Category Expense Report – ${monthLabel} ${selectedYear}</span>
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const ChartIcon = () => (
     <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
       <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
     </svg>
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading category report...</div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">
@@ -252,7 +337,13 @@ const calculateCategoryStats = () => {
       ) : (
         // Show detailed view for selected category
         selectedCategoryData && (
-          <div>
+          <div id="expense-print-area">
+            {/* Print Header - only visible when printing */}
+            <div className="hidden print:block mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">Expense Category Report</h1>
+              <p className="text-gray-600 text-sm mt-1">Period: {monthLabel} {selectedYear}</p>
+              <hr className="mt-3 border-gray-300" />
+            </div>
             <div className="bg-white border border-gray-100 rounded-xl shadow-md p-6 mb-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -265,12 +356,25 @@ const calculateCategoryStats = () => {
                     {selectedCategoryData.type}
                   </span>
                 </div>
-                <button
-                  onClick={() => setSelectedCategory('all')}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 text-sm font-medium transition-colors cursor-pointer"
-                >
-                  ← Back to All
-                </button>
+                <div className="flex items-center gap-3 no-print">
+                  <button
+                    onClick={handlePrint}
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer shadow-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                      />
+                    </svg>
+                    Print Statement
+                  </button>
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    ← Back to All
+                  </button>
+                </div>
               </div>
 
               {/* Summary Cards */}
@@ -301,6 +405,7 @@ const calculateCategoryStats = () => {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Amount</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
+                        {isAdmin && <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Action</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -322,7 +427,34 @@ const calculateCategoryStats = () => {
                                 {bill.status}
                               </span>
                             </td>
+                            {isAdmin && (
+                              <td className="px-4 py-3 text-center">
+                                <button
+                                  onClick={() => {
+                                    Swal.fire({
+                                      title: 'Delete Bill?',
+                                      text: `Delete bill for Flat ${bill.flatNo} (${bill.owner})? This cannot be undone.`,
+                                      icon: 'warning',
+                                      showCancelButton: true,
+                                      confirmButtonColor: '#ef4444',
+                                      cancelButtonColor: '#6b7280',
+                                      confirmButtonText: 'Yes, delete!',
+                                    }).then((result) => {
+                                      if (result.isConfirmed) {
+                                        deleteBill(bill.id);
+                                        Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Bill deleted.', confirmButtonColor: '#f97316', timer: 2000, timerProgressBar: true });
+                                      }
+                                    });
+                                  }}
+                                  className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors cursor-pointer"
+                                  title="Delete Bill"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                                </button>
+                              </td>
+                            )}
                           </tr>
+
                         ))
                       ) : (
                         <tr>

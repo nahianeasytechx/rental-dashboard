@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 const AddBill = ({ flatId = 1, onBack }) => {
   const flatData = {
@@ -139,7 +140,12 @@ const AddBill = ({ flatId = 1, onBack }) => {
       bills.push(newBill);
       localStorage.setItem('bills', JSON.stringify(bills));
 
-      alert("Invoice generated successfully!");
+      Swal.fire({
+        icon: "success",
+        title: "Generated",
+        text: "Invoice generated successfully!",
+        confirmButtonColor: "#3b82f6"
+      });
       
       // Reset form
       const resetData = { 
@@ -152,7 +158,12 @@ const AddBill = ({ flatId = 1, onBack }) => {
       setBillData(resetData);
     } catch (error) {
       console.error('Error saving bill:', error);
-      alert('Error saving bill. Please try again.');
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error saving bill. Please try again.",
+        confirmButtonColor: "#3b82f6"
+      });
     }
   };
 

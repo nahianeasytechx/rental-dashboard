@@ -13,6 +13,8 @@ import MonthlyStatements from "./pages/MonthlyStatements ";
 import ExpenseCategoryReport from "./pages/ExpenseCategoryReport";
 import OwnerTransfer from "./pages/OwnerTransfer";
 import UserRoles from "./pages/UserRoles";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AddRent from "./pages/AddRent";
 
 function App() {
   const location = useLocation();
@@ -21,31 +23,38 @@ function App() {
   return (
     <>
       {isLoginPage ? (
-        // Login page without Sidebar and Navbar
         <Routes>
           <Route path="/login" element={<Login />} />
         </Routes>
       ) : (
-        // All other pages with Sidebar and Navbar
-        <div className="lg:flex">
+        <div className="lg:flex min-h-screen bg-gray-50">
           <Sidebar />
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col">
             <Navbar />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/new-flat" element={<NewFlat />} />
-              <Route path="/all-accounts/accounts" element={<Accounts />} />
-              <Route path="/all-accounts/add-expense" element={<AddExpense />} />
-              <Route path="/all-flat" element={<AllFlat />} />
-              <Route path ='/transfer-owner' element={<OwnerTransfer/>}/>
-              <Route path="/all-flat/edit-flat/:flatId" element={<EditFlat />} />
-              <Route path="/all-flat/add-bill/:flatId" element={<AddBill />} />
-              <Route path="/all-accounts/bill-records" element={<BillRecords />} />
-              <Route path="/statements" element={<MonthlyStatements/>}/>
-              <Route path="/user-role" element={<UserRoles/>}/>
-              <Route path='/all-accounts/expense-report' element={<ExpenseCategoryReport/>}/>
-              <Route path="/settings" element={<Settings/>}/>
-            </Routes>
+            <main className="flex-1">
+              <Routes>
+                {/* Everyone logged in can see Dashboard, All Flat, Bill Records */}
+                <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/all-flat" element={<ProtectedRoute><AllFlat /></ProtectedRoute>} />
+                <Route path="/all-accounts/bill-records" element={<ProtectedRoute><BillRecords /></ProtectedRoute>} />
+                
+                {/* Admin-only Routes */}
+                <Route path="/new-flat" element={<ProtectedRoute reqRole="admin"><NewFlat /></ProtectedRoute>} />
+                <Route path="/transfer-owner" element={<ProtectedRoute reqRole="admin"><OwnerTransfer /></ProtectedRoute>} />
+                <Route path="/all-flat/edit-flat/:flatId" element={<ProtectedRoute reqRole="admin"><EditFlat /></ProtectedRoute>} />
+                <Route path="/all-flat/add-bill/:flatId" element={<ProtectedRoute reqRole="admin"><AddBill /></ProtectedRoute>} />
+                
+                <Route path="/all-accounts/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
+                <Route path="/all-accounts/add-rent" element={<ProtectedRoute reqRole="admin"><AddRent /></ProtectedRoute>} />
+                <Route path="/all-accounts/add-expense" element={<ProtectedRoute reqRole="admin"><AddExpense /></ProtectedRoute>} />
+                <Route path="/all-accounts/expense-report" element={<ProtectedRoute reqRole="admin"><ExpenseCategoryReport /></ProtectedRoute>} />
+                
+                
+                <Route path="/statements" element={<ProtectedRoute><MonthlyStatements /></ProtectedRoute>} />
+                <Route path="/user-role" element={<ProtectedRoute reqRole="admin"><UserRoles /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute reqRole="admin"><Settings /></ProtectedRoute>} />
+              </Routes>
+            </main>
           </div>
         </div>
       )}

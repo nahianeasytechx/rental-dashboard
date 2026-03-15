@@ -1,8 +1,15 @@
-import React from 'react'
-import BillRecordsTable from '../components/BillRecordsTable'
+import React, { useState, useEffect } from 'react';
+import BillRecordsTable from '../components/BillRecordsTable';
 import { FaHistory } from "react-icons/fa";
+import { useApp } from '../context/AppContext';
 
 const BillRecords = () => {
+  const { bills, updateBillStatus } = useApp();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterYear, setFilterYear] = useState('all');
+
+  // Removed local loadData/localStorage logic because bills come from AppContext now
   return (
     <>
       <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">

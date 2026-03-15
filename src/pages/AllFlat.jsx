@@ -1,23 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useApp } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
+import Swal from "sweetalert2";
 
 // AddBill Component
 const AddBill = () => {
   const navigate = useNavigate();
   const { flatId } = useParams();
+  const { flats, addBill } = useApp();
   
-  const flatData = {
-    1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
-    2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
-    3: { flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
-    4: { flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
-    5: { flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
-    6: { flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
-    7: { flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
-    8: { flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
-  };
-
-  const flat = flatData[flatId] || {};
+  const flat = flats.find(f => f.id === parseInt(flatId)) || {};
 
   const [billData, setBillData] = useState({
     internetBill: "",
@@ -61,8 +54,33 @@ const AddBill = () => {
   };
 
   const handleGenerateInvoice = () => {
-    console.log("Generating invoice for:", { flatId, flat, billData, total: calculateTotal() });
-    alert("Invoice generated successfully!");
+    const total = calculateTotal();
+    
+    // Save to context
+    addBill({
+      flatId: flat.id,
+      flatNo: flat.flatNo,
+      owner: flat.ownerName,
+      month: parseInt(billData.month),
+      year: parseInt(billData.year),
+      internetBill: parseFloat(billData.internetBill || 0),
+      dishBill: parseFloat(billData.dishBill || 0),
+      associationFlatRent: parseFloat(billData.associationFlatRent || 0),
+      commonCurrentBill: parseFloat(billData.commonCurrentBill || 0),
+      communityCenterRent: parseFloat(billData.communityCenterRent || 0),
+      rooftopRoomRent: parseFloat(billData.rooftopRoomRent || 0),
+      development: parseFloat(billData.development || 0),
+      total: total
+    });
+    
+    Swal.fire({
+      icon: "success",
+      title: "Generated",
+      text: "Invoice generated and saved successfully!",
+      confirmButtonColor: "#22c55e"
+    }).then(() => {
+      navigate('/all-flat');
+    });
   };
 
   const ReceiptIcon = () => (
@@ -187,19 +205,11 @@ const AddBill = () => {
 const EditFlat = () => {
   const navigate = useNavigate();
   const { flatId } = useParams();
+  const { flats, updateFlat } = useApp();
   
-  const flatDataInitial = {
-    1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
-    2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
-    3: { flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
-    4: { flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
-    5: { flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
-    6: { flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
-    7: { flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
-    8: { flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
-  };
-
-  const [formData, setFormData] = useState(flatDataInitial[flatId] || {
+  const flat = flats.find(f => f.id === parseInt(flatId));
+  
+  const [formData, setFormData] = useState(flat || {
     flatNo: "",
     ownerName: "",
     phoneNumber: "",
@@ -236,9 +246,15 @@ const EditFlat = () => {
 
   const handleSubmit = () => {
     if (validateForm()) {
-      console.log("Updating flat:", { flatId, formData });
-      alert("Flat information updated successfully!");
-      navigate('/all-flat');
+      updateFlat(parseInt(flatId), formData);
+      Swal.fire({
+        icon: "success",
+        title: "Updated",
+        text: "Flat information updated successfully!",
+        confirmButtonColor: "#3b82f6"
+      }).then(() => {
+        navigate('/all-flat');
+      });
     }
   };
 
@@ -327,25 +343,22 @@ const EditFlat = () => {
 // Main AllFlat Component
 const AllFlat = () => {
   const navigate = useNavigate();
+  const { flats, deleteFlat } = useApp();
+  const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [flats] = useState([
-    { id: 1, flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
-    { id: 2, flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
-    { id: 3, flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
-    { id: 4, flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
-    { id: 5, flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
-    { id: 6, flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
-    { id: 7, flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
-    { id: 8, flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
-  ]);
-
   const filteredFlats = flats.filter(
-    (flat) =>
-      flat.flatNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (flat) => {
+      // 1. Role Check
+      const isOwner = flat.phoneNumber === currentUser?.phone;
+      if (currentUser?.role === 'client' && !isOwner) return false;
+      
+      // 2. Search Query Check
+      return flat.flatNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
       flat.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       flat.phoneNumber.includes(searchQuery) ||
-      (flat.nid && flat.nid.includes(searchQuery))
+      (flat.nid && flat.nid.includes(searchQuery));
+    }
   );
 
   const handleEdit = (flatId) => {
@@ -354,6 +367,30 @@ const AllFlat = () => {
 
   const handleAddBill = (flatId) => {
     navigate(`/all-flat/add-bill/${flatId}`);
+  };
+
+  const handleDeleteFlat = (flat) => {
+    Swal.fire({
+      title: 'Delete Flat?',
+      text: `Are you sure you want to delete Flat ${flat.flatNo} (${flat.ownerName})? This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteFlat(flat.id);
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: `Flat ${flat.flatNo} has been deleted.`,
+          confirmButtonColor: '#f97316',
+          timer: 2000,
+          timerProgressBar: true,
+        });
+      }
+    });
   };
 
   const HomeIcon = () => (
@@ -434,23 +471,34 @@ const AllFlat = () => {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleEdit(flat.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg shadow-lg text-white text-sm font-medium"
-              >
-                <EditIcon />
-                <span>Edit</span>
-              </button>
+            {currentUser?.role === 'admin' && (
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(flat.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg shadow-lg text-white text-sm font-medium"
+                  >
+                    <EditIcon />
+                    <span>Edit</span>
+                  </button>
 
-              <button
-                onClick={() => handleAddBill(flat.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-lg shadow-lg text-white text-sm font-medium"
-              >
-                <ReceiptIcon />
-                <span>Bill</span>
-              </button>
-            </div>
+                  <button
+                    onClick={() => handleAddBill(flat.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-lg shadow-lg text-white text-sm font-medium"
+                  >
+                    <ReceiptIcon />
+                    <span>Bill</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => handleDeleteFlat(flat)}
+                  className="w-full flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-red-500 via-red-600 to-red-700 rounded-lg shadow-lg text-white text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
+                  <span>Delete Flat</span>
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

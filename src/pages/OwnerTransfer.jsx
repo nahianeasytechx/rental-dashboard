@@ -11,7 +11,11 @@ import {
 } from "react-icons/fa";
 import { FcManager } from "react-icons/fc";
 import { MdBrowserUpdated } from "react-icons/md";
+import { useApp } from "../context/AppContext";
+import Swal from "sweetalert2";
+
 const OwnerTransfer = () => {
+  const { flats, transferOwner } = useApp();
   const [updateOwnerData, setUpdateOwnerData] = useState({
     flatNo: "",
     newOwnerName: "",
@@ -23,8 +27,45 @@ const OwnerTransfer = () => {
   });
 
   const handleUpdateOwnerSubmit = () => {
-    console.log("Update Owner Data:", updateOwnerData);
-    alert("Owner information updated successfully!");
+    if (!updateOwnerData.flatNo || !updateOwnerData.newOwnerName) {
+      Swal.fire({
+        icon: "error",
+        title: "Missing Fields",
+        text: "Please select a flat and enter the new owner's name.",
+        confirmButtonColor: "#16a34a"
+      });
+      return;
+    }
+
+    const flat = flats.find(f => f.flatNo === updateOwnerData.flatNo);
+    if (flat) {
+      transferOwner(flat.id, {
+        ownerName: updateOwnerData.newOwnerName,
+        phoneNumber: updateOwnerData.phone,
+        nid: updateOwnerData.nidNumber,
+        email: updateOwnerData.email,
+        address: updateOwnerData.address,
+        ownershipChangeDate: updateOwnerData.changeDate
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Transferred",
+        text: `Ownership of Flat ${flat.flatNo} transferred successfully to ${updateOwnerData.newOwnerName}!`,
+        confirmButtonColor: "#16a34a"
+      });
+      
+      // Reset form
+      setUpdateOwnerData({
+        flatNo: "",
+        newOwnerName: "",
+        phone: "",
+        email: "",
+        nidNumber: "",
+        address: "",
+        changeDate: "",
+      });
+    }
   };
 
   return (
@@ -73,9 +114,11 @@ const OwnerTransfer = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:outline-none transition"
                 >
                   <option value="">Choose a flat</option>
-                  <option value="A-101">A-101</option>
-                  <option value="B-201">B-201</option>
-                  <option value="C-301">C-301</option>
+                  {flats.map((flat) => (
+                    <option key={flat.id} value={flat.flatNo}>
+                      {flat.flatNo} - {flat.ownerName}
+                    </option>
+                  ))}
                 </select>
               </div>
 

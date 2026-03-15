@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
+import Swal from 'sweetalert2';
 
 const UserRole = () => {
-  const [users, setUsers] = useState([]);
+  const { users, addUser, updateUser, deleteUser } = useApp();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -9,6 +11,7 @@ const UserRole = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     phone: '',
     role: 'viewer',
     status: 'active',
@@ -23,62 +26,7 @@ const UserRole = () => {
     { value: 'viewer', label: 'Viewer', description: 'Read-only access', color: 'gray' },
   ];
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
 
-  const loadUsers = () => {
-    try {
-      const stored = localStorage.getItem('users');
-      if (stored) {
-        setUsers(JSON.parse(stored));
-      } else {
-        // Initialize with dummy data
-        const dummyUsers = [
-          {
-            id: 1,
-            name: 'Mohammad Rahman',
-            email: 'admin@building.com',
-            phone: '+880 1712-345678',
-            role: 'admin',
-            status: 'active',
-            createdAt: '2024-01-15',
-          },
-          {
-            id: 2,
-            name: 'Fatima Ahmed',
-            email: 'manager@building.com',
-            phone: '+880 1823-456789',
-            role: 'manager',
-            status: 'active',
-            createdAt: '2024-02-20',
-          },
-          {
-            id: 3,
-            name: 'Karim Hossain',
-            email: 'accountant@building.com',
-            phone: '+880 1934-567890',
-            role: 'accountant',
-            status: 'active',
-            createdAt: '2024-03-10',
-          },
-          {
-            id: 4,
-            name: 'Nusrat Jahan',
-            email: 'viewer@building.com',
-            phone: '+880 1645-678901',
-            role: 'viewer',
-            status: 'inactive',
-            createdAt: '2024-04-05',
-          },
-        ];
-        setUsers(dummyUsers);
-        localStorage.setItem('users', JSON.stringify(dummyUsers));
-      }
-    } catch (error) {
-      console.error('Error loading users:', error);
-    }
-  };
 
   const filteredUsers = users.filter(
     (user) =>
@@ -100,6 +48,12 @@ const UserRole = () => {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
+
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 5) {
+      newErrors.password = 'Password must be at least 5 characters';
+    }
     
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
@@ -114,43 +68,58 @@ const UserRole = () => {
   const handleAddUser = () => {
     if (!validateForm()) return;
 
-    const newUser = {
-      id: Date.now(),
+    addUser({
       ...formData,
       createdAt: new Date().toISOString().split('T')[0],
-    };
-
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    });
 
     resetForm();
     setShowAddModal(false);
-    alert('User added successfully!');
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Added',
+      text: 'User added successfully!',
+      confirmButtonColor: '#f97316'
+    });
   };
 
   const handleUpdateUser = () => {
     if (!validateForm()) return;
 
-    const updatedUsers = users.map((user) =>
-      user.id === editingUser.id ? { ...user, ...formData } : user
-    );
-
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    updateUser(editingUser.id, formData);
 
     resetForm();
     setEditingUser(null);
-    alert('User updated successfully!');
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Updated',
+      text: 'User updated successfully!',
+      confirmButtonColor: '#f97316'
+    });
   };
 
   const handleDeleteUser = (userId) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-
-    const updatedUsers = users.filter((user) => user.id !== userId);
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    alert('User deleted successfully!');
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteUser(userId);
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: 'User has been deleted.',
+          confirmButtonColor: '#f97316'
+        });
+      }
+    });
   };
 
   const handleEditUser = (user) => {
@@ -158,6 +127,7 @@ const UserRole = () => {
     setFormData({
       name: user.name,
       email: user.email,
+      password: user.password || '',
       phone: user.phone,
       role: user.role,
       status: user.status,
@@ -165,20 +135,17 @@ const UserRole = () => {
   };
 
   const toggleUserStatus = (userId) => {
-    const updatedUsers = users.map((user) =>
-      user.id === userId
-        ? { ...user, status: user.status === 'active' ? 'inactive' : 'active' }
-        : user
-    );
-
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    const userToToggle = users.find(u => u.id === userId);
+    if (userToToggle) {
+      updateUser(userId, { status: userToToggle.status === 'active' ? 'inactive' : 'active' });
+    }
   };
 
   const resetForm = () => {
     setFormData({
       name: '',
       email: '',
+      password: '',
       phone: '',
       role: 'viewer',
       status: 'active',
@@ -294,6 +261,7 @@ const UserRole = () => {
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Name</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Email</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Password</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Phone</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Role</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Status</th>
@@ -315,6 +283,7 @@ const UserRole = () => {
                       <div className="font-semibold text-gray-900">{user.name}</div>
                     </td>
                     <td className="px-6 py-4 text-gray-700">{user.email}</td>
+                    <td className="px-6 py-4 text-gray-700 font-mono text-xs">{user.password || 'N/A'}</td>
                     <td className="px-6 py-4 text-gray-700">{user.phone}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeClass(user.role)}`}>
@@ -413,6 +382,22 @@ const UserRole = () => {
                   placeholder="user@example.com"
                 />
                 {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className={`w-full px-4 py-3 border ${
+                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500`}
+                  placeholder="Enter login password"
+                />
+                {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
               </div>
 
               <div>
