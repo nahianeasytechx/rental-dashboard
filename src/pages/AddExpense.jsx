@@ -8,8 +8,11 @@ import {
   FaRegFileAlt,
 } from "react-icons/fa";
 import { FcSalesPerformance } from "react-icons/fc";
+import { useApp } from "../context/AppContext";
 
 const AddExpense = () => {
+  const { addExpense, categories, addCategory } = useApp();
+  
   const [incomeData, setIncomeData] = useState({
     source: "",
     amount: "",
@@ -26,8 +29,36 @@ const AddExpense = () => {
 
 
   const handleAddExpense = () => {
-    console.log("Expense Data:", expenseData);
+    if (!expenseData.category || !expenseData.amount || !expenseData.date) {
+      alert("Please fill in category, amount, and date.");
+      return;
+    }
+
+    // Check if category exists, if not, add it
+    const existingCat = categories.find(
+      c => c.name.toLowerCase() === expenseData.category.toLowerCase() && c.type === 'expense'
+    );
+    
+    let categoryId = existingCat ? existingCat.id : expenseData.category.toLowerCase().replace(/\s+/g, '_');
+    
+    if (!existingCat) {
+      addCategory({
+        id: categoryId,
+        name: expenseData.category,
+        type: 'expense'
+      });
+    }
+
+    addExpense({
+      categoryId: categoryId,
+      category: expenseData.category,
+      amount: parseFloat(expenseData.amount),
+      date: expenseData.date,
+      description: expenseData.description,
+    });
+
     alert("New expense record added successfully!");
+    setExpenseData({ category: "", amount: "", date: "", description: "" });
   };
 
   return (
@@ -80,6 +111,22 @@ const AddExpense = () => {
             </div>
 
 
+
+            <div className="mb-4">
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 mb-1">
+                <FaDollarSign className="text-red-600" />
+                Amount
+              </label>
+              <input
+                type="number"
+                placeholder="0.00"
+                value={expenseData.amount}
+                onChange={(e) =>
+                  setExpenseData({ ...expenseData, amount: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-red-500 focus:outline-none transition"
+              />
+            </div>
 
             <div className="mb-4">
               <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 mb-1">

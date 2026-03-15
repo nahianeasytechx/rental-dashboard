@@ -1,23 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useApp } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 
 // AddBill Component
 const AddBill = () => {
   const navigate = useNavigate();
   const { flatId } = useParams();
+  const { flats, addBill } = useApp();
   
-  const flatData = {
-    1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
-    2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
-    3: { flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
-    4: { flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
-    5: { flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
-    6: { flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
-    7: { flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
-    8: { flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
-  };
-
-  const flat = flatData[flatId] || {};
+  const flat = flats.find(f => f.id === parseInt(flatId)) || {};
 
   const [billData, setBillData] = useState({
     internetBill: "",
@@ -61,8 +53,27 @@ const AddBill = () => {
   };
 
   const handleGenerateInvoice = () => {
-    console.log("Generating invoice for:", { flatId, flat, billData, total: calculateTotal() });
-    alert("Invoice generated successfully!");
+    const total = calculateTotal();
+    
+    // Save to context
+    addBill({
+      flatId: flat.id,
+      flatNo: flat.flatNo,
+      owner: flat.ownerName,
+      month: parseInt(billData.month),
+      year: parseInt(billData.year),
+      internetBill: parseFloat(billData.internetBill || 0),
+      dishBill: parseFloat(billData.dishBill || 0),
+      associationFlatRent: parseFloat(billData.associationFlatRent || 0),
+      commonCurrentBill: parseFloat(billData.commonCurrentBill || 0),
+      communityCenterRent: parseFloat(billData.communityCenterRent || 0),
+      rooftopRoomRent: parseFloat(billData.rooftopRoomRent || 0),
+      development: parseFloat(billData.development || 0),
+      total: total
+    });
+    
+    alert("Invoice generated and saved successfully!");
+    navigate('/all-flat');
   };
 
   const ReceiptIcon = () => (
@@ -187,19 +198,11 @@ const AddBill = () => {
 const EditFlat = () => {
   const navigate = useNavigate();
   const { flatId } = useParams();
+  const { flats, updateFlat } = useApp();
   
-  const flatDataInitial = {
-    1: { flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
-    2: { flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
-    3: { flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
-    4: { flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
-    5: { flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
-    6: { flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
-    7: { flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
-    8: { flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
-  };
-
-  const [formData, setFormData] = useState(flatDataInitial[flatId] || {
+  const flat = flats.find(f => f.id === parseInt(flatId));
+  
+  const [formData, setFormData] = useState(flat || {
     flatNo: "",
     ownerName: "",
     phoneNumber: "",
@@ -236,7 +239,7 @@ const EditFlat = () => {
 
   const handleSubmit = () => {
     if (validateForm()) {
-      console.log("Updating flat:", { flatId, formData });
+      updateFlat(parseInt(flatId), formData);
       alert("Flat information updated successfully!");
       navigate('/all-flat');
     }
@@ -327,25 +330,22 @@ const EditFlat = () => {
 // Main AllFlat Component
 const AllFlat = () => {
   const navigate = useNavigate();
+  const { flats } = useApp();
+  const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [flats] = useState([
-    { id: 1, flatNo: "A-101", ownerName: "Ahmed Khan", phoneNumber: "+880 1712-345678", nid: "1234567890123" },
-    { id: 2, flatNo: "A-102", ownerName: "Fatima Rahman", phoneNumber: "+880 1823-456789", nid: "2345678901234" },
-    { id: 3, flatNo: "B-201", ownerName: "Karim Hossain", phoneNumber: "+880 1934-567890", nid: "3456789012345" },
-    { id: 4, flatNo: "B-202", ownerName: "Nusrat Jahan", phoneNumber: "+880 1645-678901", nid: "4567890123456" },
-    { id: 5, flatNo: "C-301", ownerName: "Rahim Uddin", phoneNumber: "+880 1756-789012", nid: "5678901234567" },
-    { id: 6, flatNo: "C-302", ownerName: "Salma Begum", phoneNumber: "+880 1867-890123", nid: "6789012345678" },
-    { id: 7, flatNo: "D-401", ownerName: "Nasir Ahmed", phoneNumber: "+880 1978-901234", nid: "7890123456789" },
-    { id: 8, flatNo: "D-402", ownerName: "Taslima Akter", phoneNumber: "+880 1589-012345", nid: "8901234567890" },
-  ]);
-
   const filteredFlats = flats.filter(
-    (flat) =>
-      flat.flatNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (flat) => {
+      // 1. Role Check
+      const isOwner = flat.phoneNumber === currentUser?.phone;
+      if (currentUser?.role === 'client' && !isOwner) return false;
+      
+      // 2. Search Query Check
+      return flat.flatNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
       flat.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       flat.phoneNumber.includes(searchQuery) ||
-      (flat.nid && flat.nid.includes(searchQuery))
+      (flat.nid && flat.nid.includes(searchQuery));
+    }
   );
 
   const handleEdit = (flatId) => {
@@ -434,23 +434,25 @@ const AllFlat = () => {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleEdit(flat.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg shadow-lg text-white text-sm font-medium"
-              >
-                <EditIcon />
-                <span>Edit</span>
-              </button>
+            {currentUser?.role === 'admin' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(flat.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg shadow-lg text-white text-sm font-medium"
+                >
+                  <EditIcon />
+                  <span>Edit</span>
+                </button>
 
-              <button
-                onClick={() => handleAddBill(flat.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-lg shadow-lg text-white text-sm font-medium"
-              >
-                <ReceiptIcon />
-                <span>Bill</span>
-              </button>
-            </div>
+                <button
+                  onClick={() => handleAddBill(flat.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-2 px-3 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-lg shadow-lg text-white text-sm font-medium"
+                >
+                  <ReceiptIcon />
+                  <span>Bill</span>
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

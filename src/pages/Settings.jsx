@@ -1,15 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Phone, Lock, Mail, Camera } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Settings = () => {
+  const { currentUser } = useAuth();
+  
   const [formData, setFormData] = useState({
-    username: 'Nahian Ahmed',
-    email: 'nahian@example.com',
-    phone: '+880 1234-567890',
+    username: '',
+    email: '',
+    phone: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setFormData({
+        username: currentUser.name || '',
+        email: currentUser.email || '',
+        phone: currentUser.phone || '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    }
+  }, [currentUser]);
   
   const [preview, setPreview] = useState('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop');
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });

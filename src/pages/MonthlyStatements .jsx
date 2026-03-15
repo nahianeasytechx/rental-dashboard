@@ -1,33 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 
 const MonthlyStatements = () => {
-  const [year, setYear] = useState('2025');
+  const { bills, categories, getAllFlatNumbers, flats } = useApp();
+  const { currentUser } = useAuth();
+  const [year, setYear] = useState(new Date().getFullYear().toString());
   const [selectedFlatNo, setSelectedFlatNo] = useState('all');
-  const [bills, setBills] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [monthlyData, setMonthlyData] = useState([]);
-  const [flatNumbers, setFlatNumbers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedStatement, setSelectedStatement] = useState(null);
+  
+  const flatNumbers = currentUser?.role === 'client'
+    ? flats.filter(f => f.phoneNumber === currentUser?.phone).map(f => f.flatNo)
+    : getAllFlatNumbers();
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
-
-  useEffect(() => {
-    loadData();
-    
-    // Listen for category updates
-    const handleCategoryUpdate = () => {
-      loadData();
-    };
-    
-    window.addEventListener('categoriesUpdated', handleCategoryUpdate);
-    
-    return () => {
-      window.removeEventListener('categoriesUpdated', handleCategoryUpdate);
-    };
-  }, []);
 
   useEffect(() => {
     if (bills.length > 0 && categories.length > 0) {
@@ -44,127 +34,6 @@ const MonthlyStatements = () => {
     }
   }, [bills, categories, year, selectedFlatNo]);
 
-  const loadData = () => {
-    try {
-      // Load categories
-      const storedCategories = localStorage.getItem('expenseCategories');
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        const defaultCategories = [
-          { id: 'rentFee', name: 'Rent Fee', type: 'income', default: true },
-          { id: 'internetBill', name: 'Internet Bill', type: 'expense', default: true },
-          { id: 'dishBill', name: 'Dish Bill', type: 'expense', default: true },
-          { id: 'associationFlatRent', name: 'Association Flat Rent', type: 'income', default: true },
-          { id: 'commonCurrentBill', name: 'Common Current Bill', type: 'income', default: true },
-          { id: 'communityCenterRent', name: 'Community Center Rent', type: 'income', default: true },
-          { id: 'rooftopRoomRent', name: 'Rooftop Room Rent', type: 'income', default: true },
-          { id: 'development', name: 'Development', type: 'income', default: true },
-        ];
-        setCategories(defaultCategories);
-        localStorage.setItem('expenseCategories', JSON.stringify(defaultCategories));
-      }
-
-      // Load bills
-      const stored = localStorage.getItem('bills');
-      if (stored) {
-        const loadedBills = JSON.parse(stored);
-        setBills(loadedBills);
-        
-        const uniqueFlats = [...new Set(loadedBills.map(b => b.flatNo).filter(f => f))];
-        setFlatNumbers(uniqueFlats.sort());
-      } else {
-        const dummyData = [
-          {
-            id: 1,
-            owner: "Mr. Rahman",
-            flatNo: "A-101",
-            year: 2025,
-            month: 10,
-            rentFee: 15000,
-            internetBill: 800,
-            dishBill: 300,
-            associationFlatRent: 1200,
-            commonCurrentBill: 1200,
-            communityCenterRent: 500,
-            rooftopRoomRent: 700,
-            development: 500,
-            total: 20200,
-            status: "Received",
-            date: "2025-10-01",
-            type: "Monthly Bill"
-          },
-          {
-            id: 2,
-            owner: "Mrs. Akter",
-            flatNo: "B-202",
-            year: 2025,
-            month: 10,
-            rentFee: 16000,
-            internetBill: 750,
-            dishBill: 350,
-            associationFlatRent: 1000,
-            commonCurrentBill: 1000,
-            communityCenterRent: 600,
-            rooftopRoomRent: 650,
-            development: 700,
-            total: 21050,
-            status: "Received",
-            date: "2025-10-02",
-            type: "Monthly Bill"
-          },
-          {
-            id: 3,
-            owner: "Mr. Hasan",
-            flatNo: "C-303",
-            year: 2025,
-            month: 9,
-            rentFee: 14000,
-            internetBill: 600,
-            dishBill: 250,
-            associationFlatRent: 900,
-            commonCurrentBill: 900,
-            communityCenterRent: 550,
-            rooftopRoomRent: 600,
-            development: 400,
-            total: 18200,
-            status: "Received",
-            date: "2025-09-15",
-            type: "Monthly Bill"
-          },
-          {
-            id: 4,
-            owner: "Mrs. Khan",
-            flatNo: "A-102",
-            year: 2025,
-            month: 10,
-            rentFee: 15000,
-            internetBill: 850,
-            dishBill: 300,
-            associationFlatRent: 1100,
-            commonCurrentBill: 1100,
-            communityCenterRent: 500,
-            rooftopRoomRent: 0,
-            development: 500,
-            total: 19350,
-            status: "Pending",
-            date: "2025-10-05",
-            type: "Monthly Bill"
-          },
-        ];
-        setBills(dummyData);
-        setFlatNumbers(['A-101', 'A-102', 'B-202', 'C-303']);
-        localStorage.setItem('bills', JSON.stringify(dummyData));
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      setBills([]);
-      setFlatNumbers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const calculateMonthlyData = () => {
     const incomeCategories = categories.filter(c => c.type === 'income');
     const expenseCategories = categories.filter(c => c.type === 'expense');
@@ -175,6 +44,13 @@ const MonthlyStatements = () => {
       let monthBills = bills.filter(b => 
         b.month === monthNum && b.year === parseInt(year)
       );
+
+      if (currentUser?.role === 'client') {
+        monthBills = monthBills.filter(b => {
+          const flat = flats.find(f => f.id === b.flatId || f.flatNo === b.flatNo);
+          return flat && flat.phoneNumber === currentUser?.phone;
+        });
+      }
 
       if (selectedFlatNo !== 'all') {
         monthBills = monthBills.filter(b => b.flatNo === selectedFlatNo);
@@ -214,47 +90,23 @@ const MonthlyStatements = () => {
   };
 
   const viewStatement = (monthIndex) => {
-    const monthData = monthlyData[monthIndex];
-    const monthName = months[monthIndex];
-    
-    const flatInfo = selectedFlatNo === 'all' ? 'All Flats' : `Flat ${selectedFlatNo}`;
-    
-    let statement = `=== ${monthName} ${year} Statement ===\n`;
-    statement += `${flatInfo}\n\n`;
-    statement += `Total Collection: ৳${monthData.totalCollection.toLocaleString()}\n`;
-    statement += `Total Expense: ৳${monthData.totalExpense.toLocaleString()}\n`;
-    statement += `Total Profit: ৳${monthData.totalProfit.toLocaleString()}\n`;
-    statement += `Total Loss: ৳${monthData.totalLoss.toLocaleString()}\n\n`;
-    statement += `=== Bills ===\n`;
-    
-    if (monthData.bills.length === 0) {
-      statement += 'No bills for this month.\n';
-    } else {
-      monthData.bills.forEach(b => {
-        statement += `${b.date || 'N/A'} | ${b.owner} | Flat ${b.flatNo} | ৳${b.total.toLocaleString()} | ${b.status}\n`;
-        
-        categories.forEach(cat => {
-          if (b[cat.id]) {
-            statement += `  ${cat.name}: ৳${b[cat.id]} [${cat.type}]\n`;
-          }
-        });
-      });
-    }
-
-    alert(statement);
+    setSelectedStatement({
+      data: monthlyData[monthIndex],
+      flatInfo: selectedFlatNo === 'all' ? 'All Flats' : `Flat ${selectedFlatNo}`
+    });
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading statements...</div>
-      </div>
-    );
-  }
+  const printStatement = () => {
+    window.print();
+  };
+
+  const closeStatement = () => {
+    setSelectedStatement(null);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-6 relative">
+      <div className="max-w-7xl mx-auto hide-on-print">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Monthly Statements</h1>
@@ -375,7 +227,7 @@ const MonthlyStatements = () => {
 
 
         {/* Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 hide-on-print">
           <p className="text-blue-800 text-sm">
             <strong>Note:</strong> This page automatically calculates monthly statements from the bill data added via the "Add Bill" form. 
             You can filter by specific flat numbers or view all flats together. 
@@ -385,6 +237,141 @@ const MonthlyStatements = () => {
           </p>
         </div>
       </div>
+
+      {/* Printable Statement Modal */}
+      {selectedStatement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 transition-opacity">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col relative print:w-full print:h-screen print:rounded-none print:shadow-none print:max-w-none print:overflow-visible print:p-8">
+            
+            {/* Modal Header (Hidden on print) */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex justify-between items-center hide-on-print z-10">
+              <h2 className="text-lg font-bold text-gray-800">Monthly Statement</h2>
+              <div className="flex gap-2">
+                <button 
+                  onClick={printStatement}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors cursor-pointer"
+                >
+                  Print
+                </button>
+                <button 
+                  onClick={closeStatement}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium text-sm transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {/* Statement Content (Printed area) */}
+            <div className="p-8 bg-white" id="printable-statement">
+              
+              {/* Header */}
+              <div className="text-center mb-8 border-b-2 border-gray-800 pb-6">
+                <h1 className="text-3xl font-black text-gray-900 tracking-wider mb-2">ABASHON<span className="text-orange-500">X</span></h1>
+                <p className="text-gray-600 text-sm font-medium">Monthly Financial Statement</p>
+                <p className="text-gray-500 text-xs mt-1">123 Building Avenue, Dhaka, Bangladesh</p>
+              </div>
+
+              {/* Meta */}
+              <div className="flex justify-between items-end mb-8 text-sm">
+                <div>
+                  <p className="text-gray-500 mb-1">Billing Period:</p>
+                  <p className="font-mono font-bold text-gray-900">{selectedStatement.data.month} {year}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-500 mb-1">Scope:</p>
+                  <p className="font-mono font-bold text-gray-900">{selectedStatement.flatInfo}</p>
+                </div>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-4 gap-4 mb-8">
+                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Collections</p>
+                    <p className="text-lg font-bold text-green-700">৳{selectedStatement.data.totalCollection.toLocaleString()}</p>
+                 </div>
+                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Expenses</p>
+                    <p className="text-lg font-bold text-red-700">৳{selectedStatement.data.totalExpense.toLocaleString()}</p>
+                 </div>
+                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Profit</p>
+                    <p className="text-lg font-bold text-green-700">৳{selectedStatement.data.totalProfit.toLocaleString()}</p>
+                 </div>
+                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Loss</p>
+                    <p className="text-lg font-bold text-red-700">৳{selectedStatement.data.totalLoss.toLocaleString()}</p>
+                 </div>
+              </div>
+
+              {/* Detailed Bills */}
+              <div className="mb-8">
+                <h3 className="text-md font-bold text-gray-800 border-b border-gray-300 pb-2 mb-4">Detailed Breakdown</h3>
+                {selectedStatement.data.bills.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic">No bills recorded for this period.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="text-left py-2 px-3 text-gray-600 font-semibold text-xs border">Date</th>
+                        <th className="text-left py-2 px-3 text-gray-600 font-semibold text-xs border">Owner/Flat</th>
+                        <th className="text-left py-2 px-3 text-gray-600 font-semibold text-xs border">Status</th>
+                        <th className="text-right py-2 px-3 text-gray-600 font-semibold text-xs border">Total (৳)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedStatement.data.bills.map(b => (
+                        <tr key={b.id} className="border-b border-gray-200">
+                          <td className="py-2 px-3 border">{b.date}</td>
+                          <td className="py-2 px-3 border border-r-0 border-l-0 border-t-0 font-medium">{b.owner} <span className="text-gray-500 font-normal">(Flat {b.flatNo})</span></td>
+                          <td className={`py-2 px-3 border border-r-0 border-l-0 border-t-0 font-semibold ${b.status === 'Received' ? 'text-green-600' : 'text-orange-600'}`}>{b.status}</td>
+                          <td className="py-2 px-3 border border-r-0 border-l-0 border-t-0 text-right font-mono font-medium">৳{b.total.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Footer / Signatures */}
+              <div className="mt-16 pt-8 flex justify-between px-4 pb-8 hide-on-print">
+                <div className="text-center">
+                  <div className="w-48 border-t border-gray-400 mb-2 mx-auto"></div>
+                  <p className="text-xs text-gray-500 uppercase tracking-widest">Authority Signature</p>
+                </div>
+              </div>
+              <div className="mt-16 pt-8 justify-between px-4 pb-8 hidden print:flex">
+                <div className="text-center">
+                  <div className="w-48 border-t border-gray-400 mb-2 mx-auto"></div>
+                  <p className="text-xs text-gray-500 uppercase tracking-widest">Authority Signature</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embedded CSS for Print Mode */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .hide-on-print {
+            display: none !important;
+          }
+          #printable-statement, #printable-statement * {
+            visibility: visible;
+          }
+          #printable-statement {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+        }
+      `}} />
     </div>
   );
 };

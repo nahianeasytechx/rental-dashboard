@@ -1,134 +1,31 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useApp } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 
 const Accounts = () => {
-  const [bills, setBills] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const { bills, categories, updateBillStatus, flats } = useApp();
+  const { currentUser } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  useEffect(() => {
-    loadData();
-    
-    // Listen for category updates
-    const handleCategoryUpdate = () => {
-      loadData();
-    };
-    
-    window.addEventListener('categoriesUpdated', handleCategoryUpdate);
-    
-    return () => {
-      window.removeEventListener('categoriesUpdated', handleCategoryUpdate);
-    };
-  }, []);
-
-  const loadData = () => {
-    try {
-      // Load categories
-      const storedCategories = localStorage.getItem('expenseCategories');
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      }
-
-      // Load bills
-      const stored = localStorage.getItem('bills');
-      if (stored) {
-        setBills(JSON.parse(stored));
-      } else {
-        // Initialize with dummy data
-        const dummyData = [
-          {
-            id: 1,
-            owner: "Mr. Rahman",
-            flatNo: "A-101",
-            year: 2025,
-            month: 10,
-            rentFee: 15000,
-            internetBill: 800,
-            dishBill: 300,
-            associationFlatRent: 1200,
-            commonCurrentBill: 1200,
-            communityCenterRent: 500,
-            rooftopRoomRent: 700,
-            development: 500,
-            total: 20200,
-            status: "Pending",
-            type: "Rent Payment",
-            date: "2025-10-01",
-          },
-          {
-            id: 2,
-            owner: "Mrs. Akter",
-            flatNo: "B-202",
-            year: 2025,
-            month: 10,
-            rentFee: 16000,
-            internetBill: 750,
-            dishBill: 350,
-            associationFlatRent: 1000,
-            commonCurrentBill: 1000,
-            communityCenterRent: 600,
-            rooftopRoomRent: 650,
-            development: 700,
-            total: 21050,
-            status: "Received",
-            type: "Service Charge",
-            date: "2025-10-02",
-          },
-          {
-            id: 3,
-            owner: "Mr. Hasan",
-            flatNo: "C-303",
-            year: 2025,
-            month: 10,
-            rentFee: 14000,
-            internetBill: 600,
-            dishBill: 250,
-            associationFlatRent: 900,
-            commonCurrentBill: 900,
-            communityCenterRent: 550,
-            rooftopRoomRent: 600,
-            development: 400,
-            total: 18200,
-            status: "Received",
-            type: "Electricity Bill",
-            date: "2025-10-05",
-          },
-          {
-            id: 4,
-            owner: "Mrs. Khan",
-            flatNo: "A-102",
-            year: 2025,
-            month: 10,
-            rentFee: 15000,
-            internetBill: 850,
-            dishBill: 300,
-            associationFlatRent: 1100,
-            commonCurrentBill: 1100,
-            communityCenterRent: 500,
-            rooftopRoomRent: 0,
-            development: 500,
-            total: 19350,
-            status: "Received",
-            type: "Maintenance",
-            date: "2025-10-07",
-          },
-        ];
-        setBills(dummyData);
-        localStorage.setItem('bills', JSON.stringify(dummyData));
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-    }
-  };
+  // Filter bills by role
+  const userBills = currentUser?.role === 'client'
+    ? bills.filter(b => {
+        const flat = flats.find(f => f.id === b.flatId || f.flatNo === b.flatNo);
+        return flat && flat.phoneNumber === currentUser?.phone;
+      })
+    : bills;
 
   // Filter bills by selected month and year
-  const filteredBills = bills.filter(
-    bill => bill.month === selectedMonth && bill.year === selectedYear
-  );
+  const filteredBills = useMemo(() => {
+    return userBills
+      .filter(bill => bill.month === selectedMonth && bill.year === selectedYear)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [bills, selectedMonth, selectedYear]);
 
   // Calculate summary based on filtered bills and dynamic categories
-  const calculateSummary = () => {
+  const summary = useMemo(() => {
     const incomeCategories = categories.filter(c => c.type === 'income');
     const expenseCategories = categories.filter(c => c.type === 'expense');
 
@@ -139,19 +36,11 @@ const Accounts = () => {
     let donationDevelopment = 0;
 
     filteredBills.filter(b => b.status === "Received").forEach(bill => {
-      // Rent Fee (specific category)
       totalRentCollected += (bill.rentFee || 0);
-      
-      // Service Charge (specific category for backwards compatibility)
-      serviceChargeCollected += (bill.serviceCharge || bill.internetBill || 0);
-      
-      // Maintenance Fund (common bill)
+      serviceChargeCollected += (bill.serviceCharge || bill.internetBill || bill.dishBill || 0);
       maintenanceFund += (bill.commonBill || bill.commonCurrentBill || 0);
+      donationDevelopment += (bill.development || 0);
       
-      // Donation/Development
-      donationDevelopment += (bill.donation || 0) + (bill.development || 0);
-      
-      // All expenses
       expenseCategories.forEach(cat => {
         totalExpense += (bill[cat.id] || 0);
       });
@@ -173,9 +62,7 @@ const Accounts = () => {
       maintenanceFund,
       donationDevelopment,
     };
-  };
-
-  const summary = calculateSummary();
+  }, [filteredBills, categories]);
 
   const months = [
     { value: 1, label: "January" },
@@ -375,15 +262,27 @@ const Accounts = () => {
                     <td className="px-6 py-3 font-semibold text-gray-900">৳{item.total.toLocaleString()}</td>
                     <td className="px-6 py-3">{item.date}</td>
                     <td className="px-6 py-3 text-center">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          item.status === "Received"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {item.status}
-                      </span>
+                      {currentUser?.role === 'admin' ? (
+                        <button
+                          onClick={() => updateBillStatus(item.id, item.status === "Received" ? "Pending" : "Received")}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                            item.status === "Received"
+                              ? "bg-green-100 text-green-700 hover:bg-green-200"
+                              : "bg-red-100 text-red-700 hover:bg-red-200"
+                          }`}
+                        >
+                          {item.status}
+                        </button>
+                      ) : (
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            item.status === "Received"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))

@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
 
 const ExpenseCategoryReport = () => {
-  const [categories, setCategories] = useState([]);
-  const [bills, setBills] = useState([]);
+  const { bills, categories } = useApp();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [loading, setLoading] = useState(true);
 
   const months = [
     { value: 1, label: "January" }, { value: 2, label: "February" },
@@ -20,52 +19,7 @@ const ExpenseCategoryReport = () => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
-  useEffect(() => {
-    loadData();
 
-    const handleCategoryUpdate = () => {
-      loadData();
-    };
-
-    window.addEventListener('categoriesUpdated', handleCategoryUpdate);
-
-    return () => {
-      window.removeEventListener('categoriesUpdated', handleCategoryUpdate);
-    };
-  }, []);
-
-  const loadData = () => {
-    try {
-      // Load categories
-      const storedCategories = localStorage.getItem('expenseCategories');
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        const defaultCategories = [
-          { id: 'rentFee', name: 'Rent Fee', type: 'income', default: true },
-          { id: 'internetBill', name: 'Internet Bill', type: 'expense', default: true },
-          { id: 'dishBill', name: 'Dish Bill', type: 'expense', default: true },
-          { id: 'associationFlatRent', name: 'Association Flat Rent', type: 'income', default: true },
-          { id: 'commonCurrentBill', name: 'Common Current Bill', type: 'income', default: true },
-          { id: 'communityCenterRent', name: 'Community Center Rent', type: 'income', default: true },
-          { id: 'rooftopRoomRent', name: 'Rooftop Room Rent', type: 'income', default: true },
-          { id: 'development', name: 'Development', type: 'income', default: true },
-        ];
-        setCategories(defaultCategories);
-        localStorage.setItem('expenseCategories', JSON.stringify(defaultCategories));
-      }
-
-      // Load bills
-      const storedBills = localStorage.getItem('bills');
-      if (storedBills) {
-        setBills(JSON.parse(storedBills));
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
 const calculateCategoryStats = () => {
   const filteredBills = bills.filter(
@@ -123,13 +77,7 @@ const calculateCategoryStats = () => {
     </svg>
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading category report...</div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="container lg:py-4 px-8 mx-auto mt-20 lg:mt-0">

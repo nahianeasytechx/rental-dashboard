@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import building from "../assets/Generated Image October 23, 2025 - 1_45PM (1).png";
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
+  const { login, isLoggedIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('admin@demo.com');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('admin');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  if (isLoggedIn) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -20,15 +27,11 @@ const Login = () => {
       return;
     }
 
-    if (
-      (email === 'admin@demo.com' && password === 'admin') ||
-      (email === 'client@demo.com' && password === 'client')
-    ) {
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userEmail', email);
+    const result = login(email, password);
+    if (result.success) {
       navigate('/');
     } else {
-      setError('Invalid email or password');
+      setError(result.message);
     }
   };
 
@@ -82,6 +85,15 @@ const Login = () => {
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-gray-800">Welcome Back </h1>
             <p className="text-gray-500 mt-2">Login to your AbashonX account</p>
+          </div>
+
+          {/* Quick Demo Credentials Help */}
+          <div className="mb-6 p-4 bg-orange-50 rounded-lg text-sm border border-orange-100">
+            <p className="font-semibold text-orange-800 mb-1">Demo Credentials:</p>
+            <ul className="text-orange-700 space-y-1">
+              <li><span className="font-medium inline-block w-14">Admin:</span> admin@demo.com / admin</li>
+              <li><span className="font-medium inline-block w-14">Client:</span> client@demo.com / client</li>
+            </ul>
           </div>
 
           {error && (

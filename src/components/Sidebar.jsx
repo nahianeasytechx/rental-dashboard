@@ -13,19 +13,26 @@ import {
 } from "react-icons/fi";
 import { MdDashboardCustomize,MdManageAccounts } from "react-icons/md";
 import { BsFillHouseAddFill } from "react-icons/bs";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { IoLogOut } from "react-icons/io5";
+import { useAuth } from "../context/AuthContext";
 
 // MenuItem Component
-function MenuItem({ item, index, isOpen, onClose }) {
+function MenuItem({ item, isOpen, onClose }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const location = useLocation();
+
+  const isSubItemActive = item.subItems?.some(sub => location.pathname === sub.path);
+  const isActive = location.pathname === item.path || isSubItemActive;
 
   if (item.subItems) {
     return (
       <div>
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="flex items-center justify-between px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors w-full"
+          className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors w-full ${
+            isActive ? "bg-orange-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"
+          }`}
         >
           <div className="flex items-center space-x-3">
             <item.icon size={20} />
@@ -41,19 +48,23 @@ function MenuItem({ item, index, isOpen, onClose }) {
         {/* Dropdown Sub Items */}
         <div
           className={`overflow-hidden transition-all duration-300 ease-in-out ${
-            dropdownOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            dropdownOpen || isSubItemActive ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <div className="mt-1 ml-4 space-y-1">
+          <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-700 pl-2">
             {item.subItems.map((subItem, subIndex) => (
-              <a
+              <Link
                 key={subIndex}
-                href={subItem.path}
+                to={subItem.path}
                 onClick={onClose}
-                className="flex items-center px-4 py-2 text-sm text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
+                className={`flex items-center px-4 py-2 text-sm rounded-lg transition-colors ${
+                  location.pathname === subItem.path 
+                    ? "text-orange-400 bg-gray-800 font-medium" 
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                }`}
               >
-                <span className="ml-6">{subItem.label}</span>
-              </a>
+                <span>{subItem.label}</span>
+              </Link>
             ))}
           </div>
         </div>
@@ -64,8 +75,10 @@ function MenuItem({ item, index, isOpen, onClose }) {
   return (
     <Link
       to={item.path}
-      onClick={onClose}
-      className="flex items-center space-x-3 px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
+      onClick={item.onClick || onClose}
+      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+        isActive && !item.onClick ? "bg-orange-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"
+      }`}
     >
       <item.icon size={20} />
       <span>{item.label}</span>
@@ -75,28 +88,47 @@ function MenuItem({ item, index, isOpen, onClose }) {
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { currentUser, logout, isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    logout();
+    navigate("/login");
+  };
 
   const menuItems = [
     { icon: MdDashboardCustomize, label: "Dashboard", path: "/" },
-    { icon:BsFillHouseAddFill , label: "Add New Flat", path: "/new-flat" },
-    { icon:BsFillHouseAddFill , label: "Ownership Transfer", path: "/transfer-owner" },
-        { icon:FiHome, label: "All Flat", path: "/all-flat" },
+    // Admin only
+    ...(isAdmin ? [
+      { icon: BsFillHouseAddFill, label: "Add New Flat", path: "/new-flat" },
+      { icon: BsFillHouseAddFill, label: "Ownership Transfer", path: "/transfer-owner" },
+    ] : []),
+    { icon: FiHome, label: "All Flat", path: "/all-flat" },
+    
+    // Accounts (mixed)
     {
       icon: MdManageAccounts,
-      label: "All Accounts",
+      label: "Accounts",
       subItems: [
-        
-        { label: "Accounts", path: "/all-accounts/accounts" },
-        { label: "Add Expense", path: "/all-accounts/add-expense" },
-        { label: "Expense Report", path: "/all-accounts/expense-report" },
+        { label: "Accounts Overview", path: "/all-accounts/accounts" },
+        ...(isAdmin ? [
+          { label: "Collect Rent", path: "/all-accounts/add-rent" },
+          { label: "Add Expense", path: "/all-accounts/add-expense" },
+          { label: "Expense Report", path: "/all-accounts/expense-report" },
+        ] : []),
         { label: "Bill Records", path: "/all-accounts/bill-records" },
+        { label: "Statements", path: "/statements" },
       ],
     },
 
-
-    { icon: FiSettings, label: "User Roles", path: "/user-role" },
-    { icon: FiSettings, label: "Settings", path: "/settings" },
-        { icon: IoLogOut, label: "Logout", path: "/login" }, 
+    // Admin only
+    ...(isAdmin ? [
+      { icon: FiUsers, label: "User Roles", path: "/user-role" },
+      { icon: FiSettings, label: "Settings", path: "/settings" },
+    ] : []),
+    
+    { icon: IoLogOut, label: "Logout", path: "/login", onClick: handleLogout }, 
   ];
 
   return (
@@ -138,7 +170,6 @@ export default function Sidebar() {
             <MenuItem
               key={index}
               item={item}
-              index={index}
               isOpen={isOpen}
               onClose={() => setIsOpen(false)}
             />
@@ -147,12 +178,17 @@ export default function Sidebar() {
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800">
           <div className="flex items-center space-x-3 px-4 py-3">
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-              JD
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-orange-700 flex items-center justify-center text-white font-semibold">
+              {currentUser?.avatar || "U"}
             </div>
-            <div>
-              <p className="text-sm font-medium text-white">John Doe</p>
-              <p className="text-xs text-gray-400">john@example.com</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">{currentUser?.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-gray-400 truncate">{currentUser?.email}</p>
+                <span className="text-[10px] uppercase font-bold text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded">
+                  {currentUser?.role || 'Guest'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

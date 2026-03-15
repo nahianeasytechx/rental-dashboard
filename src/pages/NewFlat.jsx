@@ -10,7 +10,10 @@ import {
   FaCalendarAlt,
 } from "react-icons/fa";
 import { FcManager } from "react-icons/fc";
+import { useApp } from "../context/AppContext";
+
 const NewFlat = () => {
+  const { addFlat, updateFlat, flats } = useApp();
   const [newFlatData, setNewFlatData] = useState({
     flatNo: "",
     ownerName: "",
@@ -32,13 +35,38 @@ const NewFlat = () => {
   });
 
   const handleNewFlatSubmit = () => {
-    console.log("New Flat Data:", newFlatData);
+    if (!newFlatData.flatNo || !newFlatData.ownerName) {
+      alert("Flat Number and Owner Name are required.");
+      return;
+    }
+    addFlat({
+      flatNo: newFlatData.flatNo,
+      ownerName: newFlatData.ownerName,
+      phoneNumber: newFlatData.phone,
+      nid: newFlatData.nidNumber,
+      email: newFlatData.email,
+      address: newFlatData.address,
+      moveInDate: newFlatData.moveInDate,
+    });
     alert("New flat added successfully!");
+    setNewFlatData({ flatNo: "", ownerName: "", phone: "", email: "", nidNumber: "", address: "", moveInDate: "" });
   };
 
   const handleUpdateOwnerSubmit = () => {
-    console.log("Update Owner Data:", updateOwnerData);
+    const flat = flats.find(f => f.flatNo === updateOwnerData.flatNo);
+    if (!flat) {
+      alert("Flat not found!");
+      return;
+    }
+    updateFlat(flat.id, {
+      ownerName: updateOwnerData.newOwnerName,
+      phoneNumber: updateOwnerData.phone,
+      email: updateOwnerData.email,
+      nid: updateOwnerData.nidNumber,
+      address: updateOwnerData.address,
+    });
     alert("Owner information updated successfully!");
+    setUpdateOwnerData({ flatNo: "", newOwnerName: "", phone: "", email: "", nidNumber: "", address: "", changeDate: "" });
   };
 
   return (
