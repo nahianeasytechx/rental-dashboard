@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
+import { FaEdit, FaTrash, FaTimes, FaSave } from 'react-icons/fa';
 
 // Inject print styles once
 const PRINT_STYLE_ID = 'expense-report-print-style';
@@ -20,12 +21,115 @@ if (!document.getElementById(PRINT_STYLE_ID)) {
 }
 
 const ExpenseCategoryReport = () => {
-  const { bills, categories, deleteBill } = useApp();
+  const { bills, expenses, categories, deleteBill, updateBill, deleteExpense, updateCategory, deleteCategory } = useApp();
   const { currentUser } = useAuth();
   const isAdmin = currentUser?.role === 'admin';
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Edit Modal State
+  const [editingBill, setEditingBill] = useState(null);
+  const [editFormData, setEditFormData] = useState({ amount: '', date: '' });
+
+  const handleEditClick = (bill) => {
+    setEditingBill(bill);
+    setEditFormData({
+      amount: bill[selectedCategory] || 0,
+      date: bill.date || ''
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingBill || !editFormData.amount || !editFormData.date) return;
+    
+    // Update the specific category amount on the bill object
+    updateBill(editingBill.id, {
+      [selectedCategory]: parseFloat(editFormData.amount),
+      date: editFormData.date
+    });
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Updated!',
+      text: 'Bill record updated successfully.',
+      timer: 1500,
+      showConfirmButton: false
+    });
+    setEditingBill(null);
+  };
+
+  // Category Edit Modal State
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [categoryFormData, setCategoryFormData] = useState({ name: '', type: 'expense' });
+
+  const handleEditCategoryClick = (cat, e) => {
+    e.stopPropagation();
+    setEditingCategory(cat);
+    setCategoryFormData({ name: cat.name, type: cat.type });
+  };
+
+  const handleSaveCategory = () => {
+    if (!editingCategory || !categoryFormData.name) return;
+    updateCategory(editingCategory.id, categoryFormData);
+    Swal.fire({
+      icon: 'success',
+      title: 'Updated!',
+      text: 'Category updated successfully.',
+      timer: 1500,
+      showConfirmButton: false
+    });
+    setEditingCategory(null);
+  };
+
+  const handleDeleteCategoryClick = (cat, e) => {
+    e.stopPropagation();
+    
+    // Check if category is used in any bills or expenses
+    const isUsedInBills = bills.some(b => (b[cat.id] || 0) > 0);
+    const isUsedInExpenses = expenses.some(exp => exp.categoryId === cat.id || (exp.category && exp.category.toLowerCase() === cat.name.toLowerCase()));
+    
+    if (isUsedInBills || isUsedInExpenses) {
+      Swal.fire({
+        title: 'Delete Category & Records?',
+        text: `This category has existing records. Are you sure you want to delete "${cat.name}"? This will also remove the category from all bills showing this expense.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, delete it all!',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          
+          // Delete expenses linked completely
+          expenses.forEach(exp => {
+             if(exp.categoryId === cat.id || (exp.category && exp.category.toLowerCase() === cat.name.toLowerCase())) {
+                 deleteExpense(exp.id);
+             }
+          });
+
+          deleteCategory(cat.id);
+          Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Category and its records deleted.', confirmButtonColor: '#f97316', timer: 2000, showConfirmButton: false });
+        }
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Delete Category?',
+      text: `Are you sure you want to delete the "${cat.name}" category?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete!',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteCategory(cat.id);
+        Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Category deleted.', confirmButtonColor: '#f97316', timer: 2000, showConfirmButton: false });
+      }
+    });
+  };
 
   const months = [
     { value: 1, label: "January" }, { value: 2, label: "February" },
@@ -45,9 +149,81 @@ const calculateCategoryStats = () => {
   const filteredBills = bills.filter(
     b => b.month === selectedMonth && b.year === selectedYear
   );
+  
+  // Filter standalone expenses by month/year (parsing the date string YYYY-MM-DD)
+  const filteredExpenses = expenses.filter(e => {
+    if (!e.date) return false;
+    const [y, m] = e.date.split('-');
+    return parseInt(m) === selectedMonth && parseInt(y) === selectedYear;
+  });
 
   if (selectedCategory === 'all') {
     return categories.map(cat => {
+      // If it's an expense category, we pull from `filteredExpenses` instead of `bills`
+      if (cat.type === 'expense') {
+        // Find matching expenses by category name (case-insensitive) or categoryId
+        const catExpenses = filteredExpenses.filter(
+          e => e.categoryId === cat.id || (e.category && e.category.toLowerCase() === cat.name.toLowerCase())
+        );
+        const totalAmount = catExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+        
+        return {
+          ...cat,
+          totalAmount,
+          paidAmount: totalAmount, // Expenses are considered fully paid for reporting
+          dueAmount: 0,
+          billCount: catExpenses.length,
+        };
+      } else {
+        // Income category: Pull from tenant bills
+        const totalAmount = filteredBills.reduce((sum, bill) => sum + (bill[cat.id] || 0), 0);
+        const paidAmount = filteredBills
+          .filter(b => b.status === 'Received')
+          .reduce((sum, bill) => sum + (bill[cat.id] || 0), 0);
+        const dueAmount = filteredBills
+          .filter(b => b.status === 'Pending')
+          .reduce((sum, bill) => sum + (bill[cat.id] || 0), 0);
+
+        return {
+          ...cat,
+          totalAmount,
+          paidAmount,
+          dueAmount,
+          billCount: filteredBills.filter(b => (b[cat.id] || 0) > 0).length,
+        };
+      }
+    });
+  } else {
+    // Single category selected
+    const cat = categories.find(c => c.id === selectedCategory);
+    if (!cat) return [];
+
+    if (cat.type === 'expense') {
+      const catExpenses = filteredExpenses.filter(
+        e => e.categoryId === cat.id || (e.category && e.category.toLowerCase() === cat.name.toLowerCase())
+      );
+      const totalAmount = catExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+      
+      // Map expenses into a "bill-like" shape for the table to render
+      const mappedBills = catExpenses.map(exp => ({
+        id: exp.id,
+        flatNo: 'Building/Common', // Since this is a building expense, no specific flat applies
+        owner: exp.description || 'Facility Expense',
+        [cat.id]: exp.amount,
+        date: exp.date,
+        status: 'Paid',
+        isExpenseRecord: true // flag to prevent edit/delete using bill APIs
+      }));
+
+      return [{
+        ...cat,
+        totalAmount,
+        paidAmount: totalAmount,
+        dueAmount: 0,
+        billCount: catExpenses.length,
+        bills: mappedBills,
+      }];
+    } else {
       const totalAmount = filteredBills.reduce((sum, bill) => sum + (bill[cat.id] || 0), 0);
       const paidAmount = filteredBills
         .filter(b => b.status === 'Received')
@@ -56,34 +232,15 @@ const calculateCategoryStats = () => {
         .filter(b => b.status === 'Pending')
         .reduce((sum, bill) => sum + (bill[cat.id] || 0), 0);
 
-      return {
+      return [{
         ...cat,
         totalAmount,
         paidAmount,
         dueAmount,
-        billCount: filteredBills.filter(b => (b[cat.id] || 0) > 0).length, // ✅ fixed
-      };
-    });
-  } else {
-    const cat = categories.find(c => c.id === selectedCategory);
-    if (!cat) return [];
-
-    const totalAmount = filteredBills.reduce((sum, bill) => sum + (bill[cat.id] || 0), 0);
-    const paidAmount = filteredBills
-      .filter(b => b.status === 'Received')
-      .reduce((sum, bill) => sum + (bill[cat.id] || 0), 0);
-    const dueAmount = filteredBills
-      .filter(b => b.status === 'Pending')
-      .reduce((sum, bill) => sum + (bill[cat.id] || 0), 0);
-
-    return [{
-      ...cat,
-      totalAmount,
-      paidAmount,
-      dueAmount,
-      billCount: filteredBills.filter(b => (b[cat.id] || 0) > 0).length,
-      bills: filteredBills.filter(b => (b[cat.id] || 0) > 0),
-    }];
+        billCount: filteredBills.filter(b => (b[cat.id] || 0) > 0).length,
+        bills: filteredBills.filter(b => (b[cat.id] || 0) > 0),
+      }];
+    }
   }
 };
 
@@ -296,7 +453,7 @@ const calculateCategoryStats = () => {
               >
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800">{stat.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-800 pr-8">{stat.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       stat.type === 'income' 
                         ? 'bg-green-100 text-green-700' 
@@ -305,6 +462,24 @@ const calculateCategoryStats = () => {
                       {stat.type}
                     </span>
                   </div>
+                  {isAdmin && (
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={(e) => handleEditCategoryClick(stat, e)}
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded-md transition-colors"
+                        title="Edit Category"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button 
+                        onClick={(e) => handleDeleteCategoryClick(stat, e)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                        title="Delete Category"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -420,37 +595,74 @@ const calculateCategoryStats = () => {
                             <td className="px-4 py-3 text-gray-700">{bill.date || 'N/A'}</td>
                             <td className="px-4 py-3">
                               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                bill.status === 'Received'
+                                bill.status === 'Received' || bill.status === 'Paid'
                                   ? 'bg-green-100 text-green-700'
                                   : 'bg-red-100 text-red-700'
                               }`}>
                                 {bill.status}
                               </span>
                             </td>
-                            {isAdmin && (
+                            {isAdmin && !bill.isExpenseRecord && (
                               <td className="px-4 py-3 text-center">
-                                <button
-                                  onClick={() => {
-                                    Swal.fire({
-                                      title: 'Delete Bill?',
-                                      text: `Delete bill for Flat ${bill.flatNo} (${bill.owner})? This cannot be undone.`,
-                                      icon: 'warning',
-                                      showCancelButton: true,
-                                      confirmButtonColor: '#ef4444',
-                                      cancelButtonColor: '#6b7280',
-                                      confirmButtonText: 'Yes, delete!',
-                                    }).then((result) => {
-                                      if (result.isConfirmed) {
-                                        deleteBill(bill.id);
-                                        Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Bill deleted.', confirmButtonColor: '#f97316', timer: 2000, timerProgressBar: true });
-                                      }
-                                    });
-                                  }}
-                                  className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors cursor-pointer"
-                                  title="Delete Bill"
-                                >
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
-                                </button>
+                                <div className="flex justify-center gap-2">
+                                  <button
+                                    onClick={() => handleEditClick(bill)}
+                                    className="p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors cursor-pointer"
+                                    title="Edit Bill"
+                                  >
+                                    <FaEdit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      Swal.fire({
+                                        title: 'Delete Bill?',
+                                        text: `Delete bill for Flat ${bill.flatNo} (${bill.owner})? This cannot be undone.`,
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#ef4444',
+                                        cancelButtonColor: '#6b7280',
+                                        confirmButtonText: 'Yes, delete!',
+                                      }).then((result) => {
+                                        if (result.isConfirmed) {
+                                          deleteBill(bill.id);
+                                          Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Bill deleted.', confirmButtonColor: '#f97316', timer: 2000, timerProgressBar: true });
+                                        }
+                                      });
+                                    }}
+                                    className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors cursor-pointer"
+                                    title="Delete Bill"
+                                  >
+                                    <FaTrash className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                            {isAdmin && bill.isExpenseRecord && (
+                              <td className="px-4 py-3 text-center">
+                                <div className="flex justify-center flex-col items-center gap-2 relative group">
+                                  <button
+                                    onClick={() => {
+                                      Swal.fire({
+                                        title: 'Delete Expense?',
+                                        text: `Delete this facility expense completely? This cannot be undone.`,
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#ef4444',
+                                        cancelButtonColor: '#6b7280',
+                                        confirmButtonText: 'Yes, delete!',
+                                      }).then((result) => {
+                                        if (result.isConfirmed) {
+                                          deleteExpense(bill.id);
+                                          Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Expense record deleted.', confirmButtonColor: '#f97316', timer: 2000, timerProgressBar: true });
+                                        }
+                                      });
+                                    }}
+                                    className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors cursor-pointer"
+                                    title="Delete Entire Expense Record"
+                                  >
+                                    <FaTrash className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </td>
                             )}
                           </tr>
@@ -473,7 +685,7 @@ const calculateCategoryStats = () => {
       )}
 
       {/* Info Note */}
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 no-print">
         <p className="text-blue-800 text-sm">
           <strong>Note:</strong> This report shows the collection status for each category. 
           <strong> Total Collection</strong> is the sum of all bills (both paid and pending), 
@@ -481,6 +693,130 @@ const calculateCategoryStats = () => {
           <strong> Due Amount</strong> shows pending payments. Select a specific category from the dropdown to view detailed bill-wise breakdown.
         </p>
       </div>
+
+      {/* Edit Modal */}
+      {editingBill && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 flex justify-between items-center text-white">
+              <h3 className="font-bold text-lg">Edit Bill Record</h3>
+              <button 
+                onClick={() => setEditingBill(null)}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div className="flex justify-between text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <span><strong>Flat:</strong> {editingBill.flatNo}</span>
+                <span><strong>Owner:</strong> {editingBill.owner}</span>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Amount for {selectedCategoryData?.name} (৳)
+                </label>
+                <input
+                  type="number"
+                  value={editFormData.amount}
+                  onChange={(e) => setEditFormData({...editFormData, amount: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={editFormData.date}
+                  onChange={(e) => setEditFormData({...editFormData, date: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => setEditingBill(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+              >
+                <FaSave /> Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Category Modal */}
+      {editingCategory && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-4 flex justify-between items-center text-white">
+              <h3 className="font-bold text-lg">Edit Category</h3>
+              <button 
+                onClick={() => setEditingCategory(null)}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Category Name
+                </label>
+                <input
+                  type="text"
+                  value={categoryFormData.name}
+                  onChange={(e) => setCategoryFormData({...categoryFormData, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                  placeholder="e.g. Electricity Bill"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Type
+                </label>
+                <select
+                  value={categoryFormData.type}
+                  onChange={(e) => setCategoryFormData({...categoryFormData, type: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                >
+                  <option value="income">Income (Tenant Bills)</option>
+                  <option value="expense">Expense (Building Costs)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => setEditingCategory(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCategory}
+                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 flex items-center gap-2 transition-colors"
+              >
+                <FaSave /> Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

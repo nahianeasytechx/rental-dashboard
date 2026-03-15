@@ -196,6 +196,14 @@ export function AppProvider({ children }) {
     });
   }, []);
 
+  const updateBill = useCallback((id, updates) => {
+    setBills(prev => {
+      const next = prev.map(b => b.id === id ? { ...b, ...updates } : b);
+      persist("abx_bills", next);
+      return next;
+    });
+  }, []);
+
   const deleteBill = useCallback((id) => {
     setBills(prev => {
       const next = prev.filter(b => b.id !== id);
@@ -215,6 +223,14 @@ export function AppProvider({ children }) {
     return newExp;
   }, []);
 
+  const updateExpense = useCallback((id, updates) => {
+    setExpenses(prev => {
+      const next = prev.map(e => e.id === id ? { ...e, ...updates } : e);
+      persist("abx_expenses", next);
+      return next;
+    });
+  }, []);
+
   const deleteExpense = useCallback((id) => {
     setExpenses(prev => {
       const next = prev.filter(e => e.id !== id);
@@ -228,6 +244,14 @@ export function AppProvider({ children }) {
     const newCat = { ...catData, id: `cat_${Date.now()}` };
     setCategories(prev => {
       const next = [...prev, newCat];
+      persist("abx_categories", next);
+      return next;
+    });
+  }, []);
+
+  const updateCategory = useCallback((id, updates) => {
+    setCategories(prev => {
+      const next = prev.map(c => c.id === id ? { ...c, ...updates } : c);
       persist("abx_categories", next);
       return next;
     });
@@ -325,11 +349,11 @@ export function AppProvider({ children }) {
       // Flat actions
       addFlat, updateFlat, transferOwner, deleteFlat,
       // Bill actions
-      addBill, updateBillStatus, deleteBill,
+      addBill, updateBillStatus, updateBill, deleteBill,
       // Expense actions
-      addExpense, deleteExpense,
+      addExpense, updateExpense, deleteExpense,
       // Category actions
-      addCategory, deleteCategory,
+      addCategory, updateCategory, deleteCategory,
       // User actions
       addUser, updateUser, deleteUser,
       // Computed
