@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import Swal from 'sweetalert2';
 
 const UserRole = () => {
-  const { users, addUser, updateUser, deleteUser } = useApp();
+  const { users, flats, addUser, updateUser, deleteUser } = useApp();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,7 +14,9 @@ const UserRole = () => {
     password: '',
     phone: '',
     role: 'viewer',
+    role: 'viewer',
     status: 'active',
+    assignedFlat: '', // For client role
   });
 
   const [errors, setErrors] = useState({});
@@ -24,6 +26,7 @@ const UserRole = () => {
     { value: 'manager', label: 'Manager', description: 'Can manage bills and flats', color: 'blue' },
     { value: 'accountant', label: 'Accountant', description: 'Can view and manage accounts', color: 'green' },
     { value: 'viewer', label: 'Viewer', description: 'Read-only access', color: 'gray' },
+    { value: 'client', label: 'Client', description: 'Tenant view (sees only assigned flat)', color: 'teal' },
   ];
 
 
@@ -68,10 +71,10 @@ const UserRole = () => {
   const handleAddUser = () => {
     if (!validateForm()) return;
 
-    addUser({
-      ...formData,
-      createdAt: new Date().toISOString().split('T')[0],
-    });
+    const userData = { ...formData, createdAt: new Date().toISOString().split('T')[0] };
+    if (userData.role !== 'client') delete userData.assignedFlat;
+
+    addUser(userData);
 
     resetForm();
     setShowAddModal(false);
@@ -87,7 +90,10 @@ const UserRole = () => {
   const handleUpdateUser = () => {
     if (!validateForm()) return;
 
-    updateUser(editingUser.id, formData);
+    const userData = { ...formData };
+    if (userData.role !== 'client') delete userData.assignedFlat;
+
+    updateUser(editingUser.id, userData);
 
     resetForm();
     setEditingUser(null);
@@ -131,6 +137,7 @@ const UserRole = () => {
       phone: user.phone,
       role: user.role,
       status: user.status,
+      assignedFlat: user.assignedFlat || '',
     });
   };
 
@@ -149,6 +156,7 @@ const UserRole = () => {
       phone: '',
       role: 'viewer',
       status: 'active',
+      assignedFlat: '',
     });
     setErrors({});
   };
@@ -164,6 +172,7 @@ const UserRole = () => {
       blue: 'bg-blue-100 text-blue-700',
       green: 'bg-green-100 text-green-700',
       gray: 'bg-gray-100 text-gray-700',
+      teal: 'bg-teal-100 text-teal-700',
     };
     return colors[getRoleColor(role)];
   };
@@ -263,7 +272,7 @@ const UserRole = () => {
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Email</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Password</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Phone</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Role</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Role & Flat</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Created</th>
                 <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Actions</th>
@@ -286,9 +295,14 @@ const UserRole = () => {
                     <td className="px-6 py-4 text-gray-700 font-mono text-xs">{user.password || 'N/A'}</td>
                     <td className="px-6 py-4 text-gray-700">{user.phone}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeClass(user.role)}`}>
-                        {roles.find((r) => r.value === user.role)?.label}
-                      </span>
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeClass(user.role)}`}>
+                          {roles.find((r) => r.value === user.role)?.label}
+                        </span>
+                        {user.role === 'client' && user.assignedFlat && (
+                          <span className="text-xs text-gray-500 font-medium ml-1">Flat: {user.assignedFlat}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <button
@@ -432,6 +446,27 @@ const UserRole = () => {
                   ))}
                 </select>
               </div>
+
+              {formData.role === 'client' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assign Flat <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.assignedFlat}
+                    onChange={(e) => setFormData({ ...formData, assignedFlat: e.target.value })}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${!formData.assignedFlat ? 'border-red-300' : 'border-gray-300'}`}
+                  >
+                    <option value="">-- Select a Flat --</option>
+                    {flats.map(f => (
+                      <option key={f.id} value={f.flatNo}>
+                        Flat {f.flatNo} ({f.ownerName})
+                      </option>
+                    ))}
+                  </select>
+                  {!formData.assignedFlat && <p className="mt-1 text-xs text-red-500">Please assign a flat for this client.</p>}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

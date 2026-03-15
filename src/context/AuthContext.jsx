@@ -60,6 +60,7 @@ export function AuthProvider({ children }) {
       role: account.role,
       phone: account.phone,
       avatar: avatarInitials,
+      assignedFlat: account.assignedFlat,
     };
     
     setCurrentUser(user);

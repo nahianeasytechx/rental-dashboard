@@ -43,6 +43,15 @@ const BillRecordsTable = ({ limit = null, columns = null }) => {
   // Filter records based on role
   const userRecords = allRecords.filter(b => {
     if (currentUser?.role !== 'client') return true;
+    
+    // Check if the bill's flat matches the client's assigned flat
+    const billFlatName = b.flatNo || '';
+    
+    if (currentUser.assignedFlat) {
+      return billFlatName.toLowerCase() === currentUser.assignedFlat.toLowerCase();
+    }
+    
+    // Fallback exactly as it was:
     const flat = flats.find(f => f.id === b.flatId || f.flatNo === b.flatNo);
     return flat && flat.phoneNumber === currentUser?.phone;
   });

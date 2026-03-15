@@ -97,21 +97,27 @@ export default function Sidebar() {
     navigate("/login");
   };
 
+  const isClient = currentUser?.role === 'client';
+
   const menuItems = [
     { icon: MdDashboardCustomize, label: "Dashboard", path: "/" },
-    // Admin only
-    ...(isAdmin ? [
-      { icon: BsFillHouseAddFill, label: "Add New Flat", path: "/new-flat" },
-      { icon: BsFillHouseAddFill, label: "Ownership Transfer", path: "/transfer-owner" },
+    // Admin/Manager only
+    ...(!isClient ? [
+      ...(isAdmin ? [
+        { icon: BsFillHouseAddFill, label: "Add New Flat", path: "/new-flat" },
+        { icon: BsFillHouseAddFill, label: "Ownership Transfer", path: "/transfer-owner" },
+      ] : []),
+      { icon: FiHome, label: "All Flat", path: "/all-flat" },
     ] : []),
-    { icon: FiHome, label: "All Flat", path: "/all-flat" },
     
     // Accounts (mixed)
     {
       icon: MdManageAccounts,
       label: "Accounts",
       subItems: [
-        { label: "Accounts Overview", path: "/all-accounts/accounts" },
+        ...(!isClient ? [
+          { label: "Accounts Overview", path: "/all-accounts/accounts" },
+        ] : []),
         ...(isAdmin ? [
           { label: "Collect Rent", path: "/all-accounts/add-rent" },
           { label: "Add Expense", path: "/all-accounts/add-expense" },

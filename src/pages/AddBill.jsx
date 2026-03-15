@@ -280,7 +280,7 @@ const AddBill = ({ flatId = 1, onBack }) => {
             className="flex items-center gap-2 cursor-pointer transition-all ease-in-out duration-300 active:scale-95 py-3 px-8 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-lg shadow-lg text-white font-semibold text-lg"
           >
             <ReceiptIcon />
-            <span>Generate Invoice</span>
+            <span>Add Bill</span>
           </button>
         </div>
       </div>
